@@ -59,17 +59,17 @@ fun NavGraph(
                 onNavigateToJournal = { navController.navigate("journal") }
             )
         }
-        composable("goals") {
-            com.deepflowia.app.ui.screens.GoalsScreen()
-        }
-        composable("journal") {
-            com.deepflowia.app.ui.screens.JournalScreen()
+        composable("tasks") {
+            TasksScreen()
         }
         composable("habits") {
-            com.deepflowia.app.ui.screens.HabitsScreen()
+            HabitsScreen()
         }
-        composable("tasks") {
-            com.deepflowia.app.ui.screens.TasksScreen()
+        composable("goals") {
+            GoalsScreen()
+        }
+        composable("journal") {
+            JournalScreen()
         }
         composable(BottomNavItem.AI.route) {
             AIScreen()
