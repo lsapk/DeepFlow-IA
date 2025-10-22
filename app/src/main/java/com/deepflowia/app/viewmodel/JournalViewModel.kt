@@ -43,8 +43,10 @@ class JournalViewModel : ViewModel() {
     fun updateJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["journal_entries"].update(journalEntry) {
-                filter {
-                    eq("id", journalEntry.id)
+                select {
+                    filter {
+                        eq("id", journalEntry.id)
+                    }
                 }
             }
             fetchJournalEntries()
@@ -54,8 +56,10 @@ class JournalViewModel : ViewModel() {
     fun deleteJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["journal_entries"].delete {
-                filter {
-                    eq("id", journalEntry.id)
+                select {
+                    filter {
+                        eq("id", journalEntry.id)
+                    }
                 }
             }
             fetchJournalEntries()

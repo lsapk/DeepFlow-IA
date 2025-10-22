@@ -44,8 +44,10 @@ class HabitViewModel : ViewModel() {
     fun updateHabit(habit: Habit) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["habits"].update(habit) {
-                filter {
-                    eq("id", habit.id)
+                select {
+                    filter {
+                        eq("id", habit.id)
+                    }
                 }
             }
             fetchHabits()
@@ -55,8 +57,10 @@ class HabitViewModel : ViewModel() {
     fun deleteHabit(habit: Habit) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["habits"].delete {
-                filter {
-                    eq("id", habit.id)
+                select {
+                    filter {
+                        eq("id", habit.id)
+                    }
                 }
             }
             fetchHabits()

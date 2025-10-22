@@ -44,8 +44,10 @@ class GoalViewModel : ViewModel() {
     fun updateGoal(goal: Goal) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["goals"].update(goal) {
-                filter {
-                    eq("id", goal.id)
+                select {
+                    filter {
+                        eq("id", goal.id)
+                    }
                 }
             }
             fetchGoals()
@@ -55,8 +57,10 @@ class GoalViewModel : ViewModel() {
     fun deleteGoal(goal: Goal) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["goals"].delete {
-                filter {
-                    eq("id", goal.id)
+                select {
+                    filter {
+                        eq("id", goal.id)
+                    }
                 }
             }
             fetchGoals()

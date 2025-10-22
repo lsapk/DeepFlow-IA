@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.deepflowia.app.models.Goal
@@ -46,8 +47,6 @@ fun GoalsScreen(
         }
     }
 }
-
-import androidx.compose.foundation.layout.fillMaxWidth
 
 @Composable
 fun GoalItem(goal: Goal) {

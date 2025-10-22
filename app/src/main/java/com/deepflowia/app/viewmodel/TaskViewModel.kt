@@ -44,8 +44,10 @@ class TaskViewModel : ViewModel() {
     fun updateTask(task: Task) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["tasks"].update(task) {
-                filter {
-                    eq("id", task.id)
+                select {
+                    filter {
+                        eq("id", task.id)
+                    }
                 }
             }
             fetchTasks()
@@ -55,8 +57,10 @@ class TaskViewModel : ViewModel() {
     fun deleteTask(task: Task) {
         viewModelScope.launch {
             SupabaseClient.client.postgrest["tasks"].delete {
-                filter {
-                    eq("id", task.id)
+                select {
+                    filter {
+                        eq("id", task.id)
+                    }
                 }
             }
             fetchTasks()
