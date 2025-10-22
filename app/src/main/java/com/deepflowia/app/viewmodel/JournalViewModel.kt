@@ -30,7 +30,7 @@ class JournalViewModel : ViewModel() {
         viewModelScope.launch {
             val journalEntry = JournalEntry(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUser()!!.id,
+                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 content = content,
                 date = ""

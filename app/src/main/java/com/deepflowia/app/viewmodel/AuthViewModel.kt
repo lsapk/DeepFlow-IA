@@ -18,7 +18,10 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                SupabaseClient.client.auth.signUp(email, password)
+                SupabaseClient.client.auth.signUp(Email) {
+                    this.email = email
+                    this.password = password
+                }
                 _authState.value = AuthState.SignedIn
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "An error occurred")
@@ -30,7 +33,10 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                SupabaseClient.client.auth.signIn(email, password)
+                SupabaseClient.client.auth.signIn(Email) {
+                    this.email = email
+                    this.password = password
+                }
                 _authState.value = AuthState.SignedIn
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "An error occurred")

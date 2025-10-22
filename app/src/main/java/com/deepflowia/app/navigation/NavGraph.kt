@@ -7,8 +7,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.deepflowia.app.ui.screens.AIScreen
+import com.deepflowia.app.ui.screens.GoalsScreen
+import com.deepflowia.app.ui.screens.HabitsScreen
 import com.deepflowia.app.ui.screens.HomeScreen
+import com.deepflowia.app.ui.screens.JournalScreen
 import com.deepflowia.app.ui.screens.ProfileScreen
+import com.deepflowia.app.ui.screens.TasksScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel

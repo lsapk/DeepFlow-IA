@@ -2,34 +2,34 @@ package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.deepflowia.app.models.Task
-import com.deepflowia.app.viewmodel.TaskViewModel
+import com.deepflowia.app.models.Habit
+import com.deepflowia.app.viewmodel.HabitViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TasksScreen(
-    taskViewModel: TaskViewModel = viewModel()
+fun HabitsScreen(
+    habitViewModel: HabitViewModel = viewModel()
 ) {
-    val tasks = taskViewModel.tasks.collectAsState()
+    val habits = habitViewModel.habits.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tâches") }
+                title = { Text("Habitudes") }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Add new task */ }) {
+            FloatingActionButton(onClick = { /* TODO: Add new habit */ }) {
                 Text("+")
             }
         }
@@ -40,8 +40,8 @@ fun TasksScreen(
                 .padding(innerPadding)
         ) {
             LazyColumn {
-                items(tasks.value) { task ->
-                    TaskItem(task)
+                items(habits.value) { habit ->
+                    HabitItem(habit)
                 }
             }
         }
@@ -49,15 +49,15 @@ fun TasksScreen(
 }
 
 @Composable
-fun TaskItem(task: Task) {
+fun HabitItem(habit: Habit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
-            Text(text = task.title, style = MaterialTheme.typography.titleMedium)
-            Text(text = task.description, style = MaterialTheme.typography.bodyMedium)
+            Text(text = habit.title, style = MaterialTheme.typography.titleMedium)
+            Text(text = habit.description, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

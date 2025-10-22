@@ -30,7 +30,7 @@ class GoalViewModel : ViewModel() {
         viewModelScope.launch {
             val goal = Goal(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUser()!!.id,
+                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 description = description,
                 progress = 0,

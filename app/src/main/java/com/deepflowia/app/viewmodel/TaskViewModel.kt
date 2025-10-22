@@ -30,7 +30,7 @@ class TaskViewModel : ViewModel() {
         viewModelScope.launch {
             val task = Task(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUser()!!.id,
+                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 description = description,
                 isCompleted = false,

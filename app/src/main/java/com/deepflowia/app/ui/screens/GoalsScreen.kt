@@ -8,28 +8,27 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.deepflowia.app.models.Task
-import com.deepflowia.app.viewmodel.TaskViewModel
+import com.deepflowia.app.models.Goal
+import com.deepflowia.app.viewmodel.GoalViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TasksScreen(
-    taskViewModel: TaskViewModel = viewModel()
+fun GoalsScreen(
+    goalViewModel: GoalViewModel = viewModel()
 ) {
-    val tasks = taskViewModel.tasks.collectAsState()
+    val goals = goalViewModel.goals.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tâches") }
+                title = { Text("Objectifs") }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Add new task */ }) {
+            FloatingActionButton(onClick = { /* TODO: Add new goal */ }) {
                 Text("+")
             }
         }
@@ -40,8 +39,8 @@ fun TasksScreen(
                 .padding(innerPadding)
         ) {
             LazyColumn {
-                items(tasks.value) { task ->
-                    TaskItem(task)
+                items(goals.value) { goal ->
+                    GoalItem(goal)
                 }
             }
         }
@@ -49,15 +48,15 @@ fun TasksScreen(
 }
 
 @Composable
-fun TaskItem(task: Task) {
+fun GoalItem(goal: Goal) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
-            Text(text = task.title, style = MaterialTheme.typography.titleMedium)
-            Text(text = task.description, style = MaterialTheme.typography.bodyMedium)
+            Text(text = goal.title, style = MaterialTheme.typography.titleMedium)
+            Text(text = goal.description, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

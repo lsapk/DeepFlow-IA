@@ -30,7 +30,7 @@ class HabitViewModel : ViewModel() {
         viewModelScope.launch {
             val habit = Habit(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUser()!!.id,
+                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 description = description,
                 frequency = "",
