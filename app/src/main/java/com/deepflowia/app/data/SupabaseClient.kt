@@ -1,18 +1,15 @@
 package com.deepflowia.app.data
 
 import com.deepflowia.app.BuildConfig
-import io.supabase.gotrue.GoTrue
-import io.supabase.gotrue.GoTrueDefault
-import io.supabase.gotrue.gotrue
-import io.supabase.postgrest.Postgrest
-import io.supabase.postgrest.postgrest
-import io.supabase.realtime.Realtime
-import io.supabase.realtime.realtime
-import io.supabase.storage.Storage
-import io.supabase.storage.storage
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.gotrue.GoTrue
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.storage.Storage
 
 object SupabaseClient {
-    val client = io.supabase.SupabaseClient(
+    val client = createSupabaseClient(
         supabaseUrl = BuildConfig.SUPABASE_URL,
         supabaseKey = BuildConfig.SUPABASE_ANON_KEY
     ) {
