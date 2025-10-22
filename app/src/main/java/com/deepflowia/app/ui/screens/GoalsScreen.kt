@@ -47,6 +47,8 @@ fun GoalsScreen(
     }
 }
 
+import androidx.compose.foundation.layout.fillMaxWidth
+
 @Composable
 fun GoalItem(goal: Goal) {
     Card(

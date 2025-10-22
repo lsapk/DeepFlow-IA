@@ -2,7 +2,7 @@ package com.deepflowia.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.deepflowia.app.data.SupabaseClient
+import com.deepflowia.app.data.SupabaseManager
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,10 +18,7 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                SupabaseClient.client.auth.signUp(Email) {
-                    this.email = email
-                    this.password = password
-                }
+                SupabaseManager.client.auth.signUp(email = email, password = password)
                 _authState.value = AuthState.SignedIn
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "An error occurred")
@@ -33,10 +30,7 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                SupabaseClient.client.auth.signIn(Email) {
-                    this.email = email
-                    this.password = password
-                }
+                SupabaseManager.client.auth.signIn(email = email, password = password)
                 _authState.value = AuthState.SignedIn
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "An error occurred")
