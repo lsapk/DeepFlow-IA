@@ -21,7 +21,7 @@ class HabitViewModel : ViewModel() {
 
     fun fetchHabits() {
         viewModelScope.launch {
-            val result = SupabaseClient.client.postgrest["habits"].select()
+            val result = SupabaseManager.client.postgrest["habits"].select()
             _habits.value = result.decodeList<Habit>()
         }
     }
@@ -30,24 +30,22 @@ class HabitViewModel : ViewModel() {
         viewModelScope.launch {
             val habit = Habit(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
+                userId = SupabaseManager.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 description = description,
                 frequency = "",
                 streak = 0
             )
-            SupabaseClient.client.postgrest["habits"].insert(habit)
+            SupabaseManager.client.postgrest["habits"].insert(habit)
             fetchHabits()
         }
     }
 
     fun updateHabit(habit: Habit) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["habits"].update(habit) {
-                select {
-                    filter {
-                        eq("id", habit.id)
-                    }
+            SupabaseManager.client.postgrest["habits"].update(habit) {
+                filter {
+                    eq("id", habit.id)
                 }
             }
             fetchHabits()
@@ -56,11 +54,9 @@ class HabitViewModel : ViewModel() {
 
     fun deleteHabit(habit: Habit) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["habits"].delete {
-                select {
-                    filter {
-                        eq("id", habit.id)
-                    }
+            SupabaseManager.client.postgrest["habits"].delete {
+                filter {
+                    eq("id", habit.id)
                 }
             }
             fetchHabits()

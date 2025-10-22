@@ -6,6 +6,7 @@ import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Task
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,7 +22,7 @@ class TaskViewModel : ViewModel() {
 
     fun fetchTasks() {
         viewModelScope.launch {
-            val result = SupabaseClient.client.postgrest["tasks"].select()
+            val result = SupabaseManager.client.postgrest["tasks"].select()
             _tasks.value = result.decodeList<Task>()
         }
     }
@@ -30,24 +31,22 @@ class TaskViewModel : ViewModel() {
         viewModelScope.launch {
             val task = Task(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
+                userId = SupabaseManager.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 description = description,
                 isCompleted = false,
                 dueDate = ""
             )
-            SupabaseClient.client.postgrest["tasks"].insert(task)
+            SupabaseManager.client.postgrest["tasks"].insert(task)
             fetchTasks()
         }
     }
 
     fun updateTask(task: Task) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["tasks"].update(task) {
-                select {
-                    filter {
-                        eq("id", task.id)
-                    }
+            SupabaseManager.client.postgrest["tasks"].update(task) {
+                filter {
+                    eq("id", task.id)
                 }
             }
             fetchTasks()
@@ -56,11 +55,9 @@ class TaskViewModel : ViewModel() {
 
     fun deleteTask(task: Task) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["tasks"].delete {
-                select {
-                    filter {
-                        eq("id", task.id)
-                    }
+            SupabaseManager.client.postgrest["tasks"].delete {
+                filter {
+                    eq("id", task.id)
                 }
             }
             fetchTasks()

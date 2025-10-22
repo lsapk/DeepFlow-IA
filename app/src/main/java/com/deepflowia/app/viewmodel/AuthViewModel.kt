@@ -46,7 +46,7 @@ class AuthViewModel : ViewModel() {
 
     fun signOut() {
         viewModelScope.launch {
-            SupabaseClient.client.auth.signOut()
+            SupabaseManager.client.auth.signOut()
             _authState.value = AuthState.SignedOut
         }
     }

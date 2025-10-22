@@ -21,7 +21,7 @@ class JournalViewModel : ViewModel() {
 
     fun fetchJournalEntries() {
         viewModelScope.launch {
-            val result = SupabaseClient.client.postgrest["journal_entries"].select()
+            val result = SupabaseManager.client.postgrest["journal_entries"].select()
             _journalEntries.value = result.decodeList<JournalEntry>()
         }
     }
@@ -30,23 +30,21 @@ class JournalViewModel : ViewModel() {
         viewModelScope.launch {
             val journalEntry = JournalEntry(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
+                userId = SupabaseManager.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 content = content,
                 date = ""
             )
-            SupabaseClient.client.postgrest["journal_entries"].insert(journalEntry)
+            SupabaseManager.client.postgrest["journal_entries"].insert(journalEntry)
             fetchJournalEntries()
         }
     }
 
     fun updateJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["journal_entries"].update(journalEntry) {
-                select {
-                    filter {
-                        eq("id", journalEntry.id)
-                    }
+            SupabaseManager.client.postgrest["journal_entries"].update(journalEntry) {
+                filter {
+                    eq("id", journalEntry.id)
                 }
             }
             fetchJournalEntries()
@@ -55,11 +53,9 @@ class JournalViewModel : ViewModel() {
 
     fun deleteJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["journal_entries"].delete {
-                select {
-                    filter {
-                        eq("id", journalEntry.id)
-                    }
+            SupabaseManager.client.postgrest["journal_entries"].delete {
+                filter {
+                    eq("id", journalEntry.id)
                 }
             }
             fetchJournalEntries()

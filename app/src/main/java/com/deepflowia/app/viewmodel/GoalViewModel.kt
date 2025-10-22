@@ -21,7 +21,7 @@ class GoalViewModel : ViewModel() {
 
     fun fetchGoals() {
         viewModelScope.launch {
-            val result = SupabaseClient.client.postgrest["goals"].select()
+            val result = SupabaseManager.client.postgrest["goals"].select()
             _goals.value = result.decodeList<Goal>()
         }
     }
@@ -30,24 +30,22 @@ class GoalViewModel : ViewModel() {
         viewModelScope.launch {
             val goal = Goal(
                 id = 0,
-                userId = SupabaseClient.client.auth.currentUserOrNull()!!.id,
+                userId = SupabaseManager.client.auth.currentUserOrNull()!!.id,
                 title = title,
                 description = description,
                 progress = 0,
                 dueDate = ""
             )
-            SupabaseClient.client.postgrest["goals"].insert(goal)
+            SupabaseManager.client.postgrest["goals"].insert(goal)
             fetchGoals()
         }
     }
 
     fun updateGoal(goal: Goal) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["goals"].update(goal) {
-                select {
-                    filter {
-                        eq("id", goal.id)
-                    }
+            SupabaseManager.client.postgrest["goals"].update(goal) {
+                filter {
+                    eq("id", goal.id)
                 }
             }
             fetchGoals()
@@ -56,11 +54,9 @@ class GoalViewModel : ViewModel() {
 
     fun deleteGoal(goal: Goal) {
         viewModelScope.launch {
-            SupabaseClient.client.postgrest["goals"].delete {
-                select {
-                    filter {
-                        eq("id", goal.id)
-                    }
+            SupabaseManager.client.postgrest["goals"].delete {
+                filter {
+                    eq("id", goal.id)
                 }
             }
             fetchGoals()
