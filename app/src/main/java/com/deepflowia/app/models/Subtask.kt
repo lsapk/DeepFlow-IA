@@ -4,21 +4,21 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
 @Serializable
-data class Habit(
+data class Subtask(
     @SerialName("id")
     val id: String,
+    @SerialName("parent_task_id")
+    val parentTaskId: String,
     @SerialName("user_id")
     val userId: String,
     val title: String,
     val description: String? = null,
-    val frequency: String? = null,
-    val streak: Int? = 0,
-    @SerialName("offline_id")
-    val offlineId: String? = null,
-    @SerialName("synced_at")
-    val syncedAt: String? = null,
+    val completed: Boolean? = false,
+    @SerialName("sort_order")
+    val sortOrder: Int? = 0,
+    val priority: String? = "medium",
+    @SerialName("created_at")
+    val createdAt: String? = null,
     @SerialName("updated_at")
-    val updatedAt: String? = null,
-    @SerialName("linked_goal_id")
-    val linkedGoalId: String? = null
+    val updatedAt: String? = null
 )
