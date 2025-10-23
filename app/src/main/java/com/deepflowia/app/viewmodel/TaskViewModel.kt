@@ -43,27 +43,31 @@ class TaskViewModel : ViewModel() {
 
     fun updateTask(task: Task) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("tasks").update({
-                set("title", task.title)
-                set("description", task.description)
-                set("is_completed", task.isCompleted)
-            }) {
-                filter {
-                    eq("id", task.id)
+            task.id?.let {
+                SupabaseManager.client.postgrest.from("tasks").update({
+                    set("title", task.title)
+                    set("description", task.description)
+                    set("is_completed", task.isCompleted)
+                }) {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchTasks()
             }
-            fetchTasks()
         }
     }
 
     fun deleteTask(task: Task) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("tasks").delete {
-                filter {
-                    eq("id", task.id)
+            task.id?.let {
+                SupabaseManager.client.postgrest.from("tasks").delete {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchTasks()
             }
-            fetchTasks()
         }
     }
 }

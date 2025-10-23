@@ -43,26 +43,30 @@ class GoalViewModel : ViewModel() {
 
     fun updateGoal(goal: Goal) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("goals").update({
-                set("title", goal.title)
-                set("description", goal.description)
-            }) {
-                filter {
-                    eq("id", goal.id)
+            goal.id?.let {
+                SupabaseManager.client.postgrest.from("goals").update({
+                    set("title", goal.title)
+                    set("description", goal.description)
+                }) {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchGoals()
             }
-            fetchGoals()
         }
     }
 
     fun deleteGoal(goal: Goal) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("goals").delete {
-                filter {
-                    eq("id", goal.id)
+            goal.id?.let {
+                SupabaseManager.client.postgrest.from("goals").delete {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchGoals()
             }
-            fetchGoals()
         }
     }
 }

@@ -43,26 +43,30 @@ class HabitViewModel : ViewModel() {
 
     fun updateHabit(habit: Habit) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("habits").update({
-                set("title", habit.title)
-                set("description", habit.description)
-            }) {
-                filter {
-                    eq("id", habit.id)
+            habit.id?.let {
+                SupabaseManager.client.postgrest.from("habits").update({
+                    set("title", habit.title)
+                    set("description", habit.description)
+                }) {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchHabits()
             }
-            fetchHabits()
         }
     }
 
     fun deleteHabit(habit: Habit) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("habits").delete {
-                filter {
-                    eq("id", habit.id)
+            habit.id?.let {
+                SupabaseManager.client.postgrest.from("habits").delete {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchHabits()
             }
-            fetchHabits()
         }
     }
 }

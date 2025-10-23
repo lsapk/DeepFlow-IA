@@ -43,26 +43,30 @@ class JournalViewModel : ViewModel() {
 
     fun updateJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("journal_entries").update({
-                set("title", journalEntry.title)
-                set("content", journalEntry.content)
-            }) {
-                filter {
-                    eq("id", journalEntry.id)
+            journalEntry.id?.let {
+                SupabaseManager.client.postgrest.from("journal_entries").update({
+                    set("title", journalEntry.title)
+                    set("content", journalEntry.content)
+                }) {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchJournalEntries()
             }
-            fetchJournalEntries()
         }
     }
 
     fun deleteJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("journal_entries").delete {
-                filter {
-                    eq("id", journalEntry.id)
+            journalEntry.id?.let {
+                SupabaseManager.client.postgrest.from("journal_entries").delete {
+                    filter {
+                        eq("id", it)
+                    }
                 }
+                fetchJournalEntries()
             }
-            fetchJournalEntries()
         }
     }
 }
