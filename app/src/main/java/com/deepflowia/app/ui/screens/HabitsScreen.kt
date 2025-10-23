@@ -54,7 +54,7 @@ fun HabitItem(habit: Habit) {
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Text(text = habit.title, style = MaterialTheme.typography.titleMedium)
-            Text(text = habit.description, style = MaterialTheme.typography.bodyMedium)
+            Text(text = habit.description ?: "", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

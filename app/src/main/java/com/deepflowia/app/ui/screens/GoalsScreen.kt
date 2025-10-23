@@ -54,7 +54,7 @@ fun GoalItem(goal: Goal) {
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Text(text = goal.title, style = MaterialTheme.typography.titleMedium)
-            Text(text = goal.description, style = MaterialTheme.typography.bodyMedium)
+            Text(text = goal.description ?: "", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

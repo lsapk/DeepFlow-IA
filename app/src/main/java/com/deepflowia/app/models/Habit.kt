@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 @Serializable
 data class Habit(
     @SerialName("id")
-    val id: String,
+    val id: String? = null,
     @SerialName("user_id")
     val userId: String,
     val title: String,

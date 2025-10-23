@@ -54,7 +54,7 @@ fun TaskItem(task: Task) {
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Text(text = task.title, style = MaterialTheme.typography.titleMedium)
-            Text(text = task.description, style = MaterialTheme.typography.bodyMedium)
+            Text(text = task.description ?: "", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
