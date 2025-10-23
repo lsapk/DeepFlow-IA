@@ -4,10 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Habit(
-    val id: Int,
     val userId: String,
     val title: String,
-    val description: String,
-    val frequency: String,
-    val streak: Int
-)
+    val description: String
+) {
+    val id: Int = 0
+    val frequency: String = ""
+    val streak: Int = 0
+}

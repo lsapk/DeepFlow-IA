@@ -4,9 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Task
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -22,29 +21,29 @@ class TaskViewModel : ViewModel() {
 
     fun fetchTasks() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest["tasks"].select()
+            val result = SupabaseManager.client.postgrest.from("tasks").select()
             _tasks.value = result.decodeList<Task>()
         }
     }
 
     fun addTask(title: String, description: String) {
         viewModelScope.launch {
-            val task = Task(
-                id = 0,
-                userId = SupabaseManager.client.auth.currentUserOrNull()!!.id,
-                title = title,
-                description = description,
-                isCompleted = false,
-                dueDate = ""
-            )
-            SupabaseManager.client.postgrest["tasks"].insert(task)
-            fetchTasks()
+            val user = SupabaseManager.client.auth.currentUserOrNull()
+            if (user != null) {
+                val task = Task(
+                    userId = user.id,
+                    title = title,
+                    description = description
+                )
+                SupabaseManager.client.postgrest.from("tasks").insert(task)
+                fetchTasks()
+            }
         }
     }
 
     fun updateTask(task: Task) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest["tasks"].update(task) {
+            SupabaseManager.client.postgrest.from("tasks").update(task) {
                 filter {
                     eq("id", task.id)
                 }
@@ -55,7 +54,7 @@ class TaskViewModel : ViewModel() {
 
     fun deleteTask(task: Task) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest["tasks"].delete {
+            SupabaseManager.client.postgrest.from("tasks").delete {
                 filter {
                     eq("id", task.id)
                 }

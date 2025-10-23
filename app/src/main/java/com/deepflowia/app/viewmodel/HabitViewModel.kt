@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Habit
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,29 +21,29 @@ class HabitViewModel : ViewModel() {
 
     fun fetchHabits() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest["habits"].select()
+            val result = SupabaseManager.client.postgrest.from("habits").select()
             _habits.value = result.decodeList<Habit>()
         }
     }
 
     fun addHabit(title: String, description: String) {
         viewModelScope.launch {
-            val habit = Habit(
-                id = 0,
-                userId = SupabaseManager.client.auth.currentUserOrNull()!!.id,
-                title = title,
-                description = description,
-                frequency = "",
-                streak = 0
-            )
-            SupabaseManager.client.postgrest["habits"].insert(habit)
-            fetchHabits()
+            val user = SupabaseManager.client.auth.currentUserOrNull()
+            if (user != null) {
+                val habit = Habit(
+                    userId = user.id,
+                    title = title,
+                    description = description
+                )
+                SupabaseManager.client.postgrest.from("habits").insert(habit)
+                fetchHabits()
+            }
         }
     }
 
     fun updateHabit(habit: Habit) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest["habits"].update(habit) {
+            SupabaseManager.client.postgrest.from("habits").update(habit) {
                 filter {
                     eq("id", habit.id)
                 }
@@ -54,7 +54,7 @@ class HabitViewModel : ViewModel() {
 
     fun deleteHabit(habit: Habit) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest["habits"].delete {
+            SupabaseManager.client.postgrest.from("habits").delete {
                 filter {
                     eq("id", habit.id)
                 }

@@ -4,8 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Goal
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,29 +22,29 @@ class GoalViewModel : ViewModel() {
 
     fun fetchGoals() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest["goals"].select()
+            val result = SupabaseManager.client.postgrest.from("goals").select()
             _goals.value = result.decodeList<Goal>()
         }
     }
 
     fun addGoal(title: String, description: String) {
         viewModelScope.launch {
-            val goal = Goal(
-                id = 0,
-                userId = SupabaseManager.client.auth.currentUserOrNull()!!.id,
-                title = title,
-                description = description,
-                progress = 0,
-                dueDate = ""
-            )
-            SupabaseManager.client.postgrest["goals"].insert(goal)
-            fetchGoals()
+            val user = SupabaseManager.client.auth.currentUserOrNull()
+            if (user != null) {
+                val goal = Goal(
+                    userId = user.id,
+                    title = title,
+                    description = description
+                )
+                SupabaseManager.client.postgrest.from("goals").insert(goal)
+                fetchGoals()
+            }
         }
     }
 
     fun updateGoal(goal: Goal) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest["goals"].update(goal) {
+            SupabaseManager.client.postgrest.from("goals").update(goal) {
                 filter {
                     eq("id", goal.id)
                 }
@@ -54,7 +55,7 @@ class GoalViewModel : ViewModel() {
 
     fun deleteGoal(goal: Goal) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest["goals"].delete {
+            SupabaseManager.client.postgrest.from("goals").delete {
                 filter {
                     eq("id", goal.id)
                 }

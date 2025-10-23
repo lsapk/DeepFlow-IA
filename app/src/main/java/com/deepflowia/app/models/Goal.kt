@@ -4,10 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Goal(
-    val id: Int,
     val userId: String,
     val title: String,
-    val description: String,
-    val progress: Int,
-    val dueDate: String
-)
+    val description: String
+) {
+    val id: Int = 0
+    val progress: Int = 0
+    val dueDate: String = ""
+}

@@ -3,8 +3,8 @@ package com.deepflowia.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.gotrue.providers.builtin.Email
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.common.auth.provider.Email
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,13 +14,13 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.SignedOut)
     val authState: StateFlow<AuthState> = _authState
 
-    fun signUp(email: String, password: String) {
+    fun signUp(emailValue: String, passwordValue: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 SupabaseManager.client.auth.signUpWith(Email) {
-                    this.email = email
-                    this.password = password
+                    email = emailValue
+                    password = passwordValue
                 }
                 _authState.value = AuthState.SignedIn
             } catch (e: Exception) {
@@ -29,13 +29,13 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun signIn(email: String, password: String) {
+    fun signIn(emailValue: String, passwordValue: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
                 SupabaseManager.client.auth.signInWith(Email) {
-                    this.email = email
-                    this.password = password
+                    email = emailValue
+                    password = passwordValue
                 }
                 _authState.value = AuthState.SignedIn
             } catch (e: Exception) {

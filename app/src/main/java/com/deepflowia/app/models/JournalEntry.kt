@@ -4,9 +4,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class JournalEntry(
-    val id: Int,
     val userId: String,
     val title: String,
-    val content: String,
-    val date: String
-)
+    val content: String
+) {
+    val id: Int = 0
+    val date: String = ""
+}
