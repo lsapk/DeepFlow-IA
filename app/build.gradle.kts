@@ -73,15 +73,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 
     // Supabase & Ktor
-    implementation(platform("io.ktor:ktor-bom:2.3.10"))
     implementation("io.github.jan-tennert.supabase:auth-kt:3.2.5")
     implementation("io.github.jan-tennert.supabase:postgrest-kt:3.2.5")
     implementation("io.github.jan-tennert.supabase:storage-kt:3.2.5")
     implementation("io.github.jan-tennert.supabase:realtime-kt:3.2.5")
-    implementation("io.ktor:ktor-client-core")
-    implementation("io.ktor:ktor-client-okhttp")
-    implementation("io.ktor:ktor-client-content-negotiation")
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
+    implementation("io.ktor:ktor-client-core:2.3.10")
+    implementation("io.ktor:ktor-client-okhttp:2.3.10")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.10")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.10")
 
 
     testImplementation("junit:junit:4.13.2")
