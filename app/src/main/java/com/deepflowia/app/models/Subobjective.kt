@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 @Serializable
 data class Subobjective(
     @SerialName("id")
-    val id: String,
+    val id: String? = null,
     @SerialName("parent_goal_id")
     val parentGoalId: String,
     @SerialName("user_id")

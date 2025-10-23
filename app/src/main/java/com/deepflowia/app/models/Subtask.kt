@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 @Serializable
 data class Subtask(
     @SerialName("id")
-    val id: String,
+    val id: String? = null,
     @SerialName("parent_task_id")
     val parentTaskId: String,
     @SerialName("user_id")
