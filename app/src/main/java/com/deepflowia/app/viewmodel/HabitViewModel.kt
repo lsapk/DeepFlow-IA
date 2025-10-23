@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Habit
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,7 +46,6 @@ class HabitViewModel : ViewModel() {
             SupabaseManager.client.postgrest.from("habits").update({
                 set("title", habit.title)
                 set("description", habit.description)
-                set("is_completed", habit.isCompleted)
             }) {
                 filter {
                     eq("id", habit.id)
