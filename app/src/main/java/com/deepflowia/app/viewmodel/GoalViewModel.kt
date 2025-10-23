@@ -4,9 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Goal
-import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -22,8 +21,8 @@ class GoalViewModel : ViewModel() {
 
     fun fetchGoals() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("goals").select()
-            _goals.value = result.decodeList<Goal>()
+            val result = SupabaseManager.client.postgrest.from("goals").select().decodeList<Goal>()
+            _goals.value = result
         }
     }
 
@@ -44,7 +43,11 @@ class GoalViewModel : ViewModel() {
 
     fun updateGoal(goal: Goal) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("goals").update(goal) {
+            SupabaseManager.client.postgrest.from("goals").update({
+                set("title", goal.title)
+                set("description", goal.description)
+                set("is_completed", goal.isCompleted)
+            }) {
                 filter {
                     eq("id", goal.id)
                 }

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.JournalEntry
-import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +21,8 @@ class JournalViewModel : ViewModel() {
 
     fun fetchJournalEntries() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("journal_entries").select()
-            _journalEntries.value = result.decodeList<JournalEntry>()
+            val result = SupabaseManager.client.postgrest.from("journal_entries").select().decodeList<JournalEntry>()
+            _journalEntries.value = result
         }
     }
 
@@ -43,7 +43,10 @@ class JournalViewModel : ViewModel() {
 
     fun updateJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("journal_entries").update(journalEntry) {
+            SupabaseManager.client.postgrest.from("journal_entries").update({
+                set("title", journalEntry.title)
+                set("content", journalEntry.content)
+            }) {
                 filter {
                     eq("id", journalEntry.id)
                 }

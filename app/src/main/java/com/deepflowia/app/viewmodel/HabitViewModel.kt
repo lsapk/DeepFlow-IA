@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Habit
-import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +21,8 @@ class HabitViewModel : ViewModel() {
 
     fun fetchHabits() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("habits").select()
-            _habits.value = result.decodeList<Habit>()
+            val result = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
+            _habits.value = result
         }
     }
 
@@ -43,7 +43,11 @@ class HabitViewModel : ViewModel() {
 
     fun updateHabit(habit: Habit) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("habits").update(habit) {
+            SupabaseManager.client.postgrest.from("habits").update({
+                set("title", habit.title)
+                set("description", habit.description)
+                set("is_completed", habit.isCompleted)
+            }) {
                 filter {
                     eq("id", habit.id)
                 }

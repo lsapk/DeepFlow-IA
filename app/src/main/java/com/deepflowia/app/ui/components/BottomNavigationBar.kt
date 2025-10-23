@@ -10,6 +10,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.deepflowia.app.navigation.BottomNavItem
+import kotlin.collections.listOf
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {

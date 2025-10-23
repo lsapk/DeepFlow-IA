@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Task
-import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +21,8 @@ class TaskViewModel : ViewModel() {
 
     fun fetchTasks() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("tasks").select()
-            _tasks.value = result.decodeList<Task>()
+            val result = SupabaseManager.client.postgrest.from("tasks").select().decodeList<Task>()
+            _tasks.value = result
         }
     }
 
@@ -43,7 +43,11 @@ class TaskViewModel : ViewModel() {
 
     fun updateTask(task: Task) {
         viewModelScope.launch {
-            SupabaseManager.client.postgrest.from("tasks").update(task) {
+            SupabaseManager.client.postgrest.from("tasks").update({
+                set("title", task.title)
+                set("description", task.description)
+                set("is_completed", task.isCompleted)
+            }) {
                 filter {
                     eq("id", task.id)
                 }

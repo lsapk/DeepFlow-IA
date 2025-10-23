@@ -3,11 +3,12 @@ package com.deepflowia.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.common.auth.provider.Email
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.providers.builtin.Email
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import io.github.jan.supabase.gotrue.providers.builtin.OTP.Companion.Type
 
 class AuthViewModel : ViewModel() {
 
