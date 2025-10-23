@@ -73,7 +73,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 
     // Supabase & Ktor
-    implementation(platform("io.ktor:ktor-bom:2.3.10"))
+    implementation(platform("io.ktor:ktor-bom:3.2.5"))
     implementation("io.github.jan-tennert.supabase:auth-kt:3.2.5")
     implementation("io.github.jan-tennert.supabase:postgrest-kt:3.2.5")
     implementation("io.github.jan-tennert.supabase:storage-kt:3.2.5")
