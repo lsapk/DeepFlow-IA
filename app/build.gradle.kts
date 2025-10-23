@@ -72,10 +72,10 @@ dependencies {
 
     // Supabase
     implementation(platform("io.github.jan-tennert.supabase:bom:3.2.5"))
-    implementation("io.github.jan.supabase:auth-kt")
-    implementation("io.github.jan.supabase:postgrest-kt")
-    implementation("io.github.jan-supabase:storage-kt")
-    implementation("io.github.jan-supabase:realtime-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-android:2.3.10")
 
     testImplementation("junit:junit:4.13.2")
