@@ -12,7 +12,7 @@ data class Goal(
     val title: String,
     val description: String? = null,
     val progress: Int? = 0,
-    @SerialName("is_completed")
+    @SerialName("completed")
     val isCompleted: Boolean? = false,
     @SerialName("due_date")
     val dueDate: String? = null,

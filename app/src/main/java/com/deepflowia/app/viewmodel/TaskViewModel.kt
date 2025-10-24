@@ -70,4 +70,19 @@ class TaskViewModel : ViewModel() {
             }
         }
     }
+
+    fun markTaskAsComplete(task: Task) {
+        viewModelScope.launch {
+            task.id?.let {
+                SupabaseManager.client.postgrest.from("tasks").update({
+                    set("is_completed", true)
+                }) {
+                    filter {
+                        eq("id", it)
+                    }
+                }
+                fetchTasks()
+            }
+        }
+    }
 }

@@ -44,11 +44,29 @@ class GoalViewModel : ViewModel() {
     fun updateGoal(goal: Goal) {
         viewModelScope.launch {
             goal.id?.let {
+                SupabaseManager.client.postgrest.from("goals").update({
+                    set("title", goal.title)
+                    set("description", goal.description)
+                    set("progress", goal.progress)
+                    set("completed", goal.isCompleted)
+                }) {
+                    filter {
+                        eq("id", it)
+                    }
+                }
+                fetchGoals()
+            }
+        }
+    }
+
+    fun addProgressToGoal(goal: Goal) {
+        viewModelScope.launch {
+            goal.id?.let {
                 val newProgress = ((goal.progress ?: 0) + 10).coerceAtMost(100)
                 SupabaseManager.client.postgrest.from("goals").update({
                     set("progress", newProgress)
                     if (newProgress == 100) {
-                        set("is_completed", true)
+                        set("completed", true)
                     }
                 }) {
                     filter {
