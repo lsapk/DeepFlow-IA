@@ -12,6 +12,7 @@ import com.deepflowia.app.ui.screens.HabitsScreen
 import com.deepflowia.app.ui.screens.HomeScreen
 import com.deepflowia.app.ui.screens.JournalScreen
 import com.deepflowia.app.ui.screens.ProfileScreen
+import com.deepflowia.app.ui.screens.TaskDetailScreen
 import com.deepflowia.app.ui.screens.TasksScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
@@ -60,7 +61,15 @@ fun NavGraph(
             )
         }
         composable("tasks") {
-            TasksScreen()
+            TasksScreen(navController = navController)
+        }
+        composable("task_detail/{taskId}") { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId")
+            val taskViewModel: TaskViewModel = viewModel()
+            val task = taskViewModel.tasks.collectAsState().value.find { it.id == taskId }
+            if (task != null) {
+                TaskDetailScreen(task = task)
+            }
         }
         composable("habits") {
             HabitsScreen()
