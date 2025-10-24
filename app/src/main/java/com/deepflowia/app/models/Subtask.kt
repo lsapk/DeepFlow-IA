@@ -13,9 +13,11 @@ data class Subtask(
     val userId: String,
     val title: String,
     val description: String? = null,
+    @SerialName("completed")
     val completed: Boolean? = false,
     @SerialName("sort_order")
     val sortOrder: Int? = 0,
+    @SerialName("priority")
     val priority: String? = "medium",
     @SerialName("created_at")
     val createdAt: String? = null,

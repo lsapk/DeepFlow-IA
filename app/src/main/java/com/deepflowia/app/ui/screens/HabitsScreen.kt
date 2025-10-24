@@ -44,7 +44,7 @@ fun HabitsScreen(
                     HabitItem(
                         habit = habit,
                         onHabitCompleted = { habitToUpdate, completed ->
-                            habitViewModel.updateHabit(habitToUpdate.copy(isCompleted = completed))
+                            habitViewModel.updateHabit(habitToUpdate.copy(completed = completed))
                         }
                     )
                 }
@@ -65,7 +65,7 @@ fun HabitItem(habit: Habit, onHabitCompleted: (Habit, Boolean) -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
-                checked = habit.isCompleted ?: false,
+                checked = habit.completed ?: false,
                 onCheckedChange = { onHabitCompleted(habit, it) }
             )
             Spacer(modifier = Modifier.width(8.dp))

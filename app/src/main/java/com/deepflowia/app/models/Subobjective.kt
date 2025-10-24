@@ -13,6 +13,7 @@ data class Subobjective(
     val userId: String,
     val title: String,
     val description: String? = null,
+    @SerialName("completed")
     val completed: Boolean? = false,
     @SerialName("sort_order")
     val sortOrder: Int? = 0,
