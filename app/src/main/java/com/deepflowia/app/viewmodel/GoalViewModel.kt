@@ -48,7 +48,6 @@ class GoalViewModel : ViewModel() {
                     set("title", goal.title)
                     set("description", goal.description)
                     set("progress", goal.progress)
-                    set("is_completed", goal.isCompleted)
                 }) {
                     filter {
                         eq("id", it)
