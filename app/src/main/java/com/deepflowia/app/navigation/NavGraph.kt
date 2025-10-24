@@ -18,6 +18,7 @@ import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.AuthState
+import com.deepflowia.app.viewmodel.TaskViewModel
 
 @Composable
 fun NavGraph(
