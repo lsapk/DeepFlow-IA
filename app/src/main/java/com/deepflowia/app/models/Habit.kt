@@ -13,8 +13,8 @@ data class Habit(
     val description: String? = null,
     val frequency: String? = null,
     val streak: Int? = 0,
-    @SerialName("completed")
-    val completed: Boolean? = false,
+    @SerialName("is_completed")
+    val isCompleted: Boolean? = false,
     @SerialName("offline_id")
     val offlineId: String? = null,
     @SerialName("synced_at")

@@ -47,7 +47,7 @@ class HabitViewModel : ViewModel() {
                 SupabaseManager.client.postgrest.from("habits").update({
                     set("title", habit.title)
                     set("description", habit.description)
-                    set("completed", habit.completed)
+                    set("is_completed", habit.isCompleted)
                 }) {
                     filter {
                         eq("id", it)
