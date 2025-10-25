@@ -1,5 +1,6 @@
 package com.deepflowia.app.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
@@ -44,15 +45,23 @@ class GoalViewModel : ViewModel() {
     fun updateGoal(goal: Goal) {
         viewModelScope.launch {
             goal.id?.let {
+                val newProgress = (goal.progress ?: 0) + 10
+                val cappedProgress = newProgress.coerceAtMost(100)
+
                 SupabaseManager.client.postgrest.from("goals").update({
                     set("title", goal.title)
                     set("description", goal.description)
-                    set("progress", goal.progress)
+                    set("progress", cappedProgress)
                 }) {
                     filter {
                         eq("id", it)
                     }
                 }
+
+                if (cappedProgress == 100) {
+                    Log.d("GoalViewModel", "Objectif '${goal.title}' complété!")
+                }
+
                 fetchGoals()
             }
         }
