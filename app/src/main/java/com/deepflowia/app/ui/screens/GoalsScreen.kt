@@ -43,12 +43,8 @@ fun GoalsScreen(
                 items(goals.value) { goal ->
                     GoalItem(
                         goal = goal,
-                        onGoalCompleted = { goalToUpdate, completed ->
-                            goalViewModel.updateGoal(goalToUpdate.copy(isCompleted = completed))
-                        },
                         onIncreaseProgress = { goalToUpdate ->
-                            val newProgress = ((goalToUpdate.progress ?: 0) + 10).coerceAtMost(100)
-                            goalViewModel.updateGoal(goalToUpdate.copy(progress = newProgress))
+                            goalViewModel.updateGoal(goalToUpdate)
                         }
                     )
                 }
@@ -60,7 +56,6 @@ fun GoalsScreen(
 @Composable
 fun GoalItem(
     goal: Goal,
-    onGoalCompleted: (Goal, Boolean) -> Unit,
     onIncreaseProgress: (Goal) -> Unit
 ) {
     Card(
@@ -69,13 +64,7 @@ fun GoalItem(
             .padding(8.dp)
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = goal.isCompleted ?: false,
-                    onCheckedChange = { onGoalCompleted(goal, it) }
-                )
-                Text(text = goal.title, style = MaterialTheme.typography.titleMedium)
-            }
+            Text(text = goal.title, style = MaterialTheme.typography.titleMedium)
             Text(text = goal.description ?: "", style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
