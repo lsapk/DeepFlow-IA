@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.material3.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -85,7 +84,7 @@ fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(bounded = true),
+                indication = null, // Désactive l'effet d'ondulation pour éviter le crash
                 onClick = onTaskClicked
             )
     )
