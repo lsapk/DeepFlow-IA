@@ -46,7 +46,7 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            val filteredTasks = tasks.filter { (it.completed ?: false) == showCompleted }
+            val filteredTasks = tasks.filter { it.completed == showCompleted }
             LazyColumn {
                 items(filteredTasks) { task ->
                     TaskItem(
@@ -69,18 +69,22 @@ fun TasksScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -> Unit) {
-    ListItem(
-        headlineContent = { Text(task.title) },
-        supportingContent = { task.description?.let { Text(it) } },
-        leadingContent = {
-            Checkbox(
-                checked = task.completed ?: false,
-                onCheckedChange = onTaskCompleted
-            )
-        },
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
             .clickable(onClick = onTaskClicked)
-    )
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        ListItem(
+            headlineContent = { Text(task.title) },
+            supportingContent = { task.description?.let { Text(it) } },
+            leadingContent = {
+                Checkbox(
+                    checked = task.completed,
+                    onCheckedChange = onTaskCompleted
+                )
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }

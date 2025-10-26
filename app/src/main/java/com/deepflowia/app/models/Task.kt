@@ -12,7 +12,7 @@ data class Task(
     val title: String,
     val description: String? = null,
     @SerialName("completed")
-    val completed: Boolean? = false,
+    val completed: Boolean = false,
     @SerialName("due_date")
     val dueDate: String? = null,
     @SerialName("offline_id")
