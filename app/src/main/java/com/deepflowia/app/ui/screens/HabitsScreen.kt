@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,7 +22,8 @@ import com.deepflowia.app.viewmodel.HabitViewModel
 fun HabitsScreen(
     habitViewModel: HabitViewModel = viewModel()
 ) {
-    val habits = habitViewModel.habits.collectAsState()
+    val habits by habitViewModel.habits.collectAsState()
+    val completedHabitIds by habitViewModel.habitCompletions.collectAsState()
 
     Scaffold(
         topBar = {
@@ -30,7 +33,7 @@ fun HabitsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { /* TODO: Add new habit */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add habit")
+                Icon(Icons.Default.Add, contentDescription = "Ajouter une habitude")
             }
         }
     ) { innerPadding ->
@@ -40,11 +43,19 @@ fun HabitsScreen(
                 .padding(innerPadding)
         ) {
             LazyColumn {
-                items(habits.value) { habit ->
+                items(habits) { habit ->
+                    val isCompleted = completedHabitIds.contains(habit.id)
                     HabitItem(
                         habit = habit,
-                        onHabitCompleted = { habitToUpdate, completed ->
-                            habitViewModel.updateHabit(habitToUpdate.copy(isCompleted = completed))
+                        isCompleted = isCompleted,
+                        onHabitCompleted = { checked ->
+                            habit.id?.let { id ->
+                                if (checked) {
+                                    habitViewModel.completeHabit(id)
+                                } else {
+                                    habitViewModel.uncompleteHabit(id)
+                                }
+                            }
                         }
                     )
                 }
@@ -54,7 +65,7 @@ fun HabitsScreen(
 }
 
 @Composable
-fun HabitItem(habit: Habit, onHabitCompleted: (Habit, Boolean) -> Unit) {
+fun HabitItem(habit: Habit, isCompleted: Boolean, onHabitCompleted: (Boolean) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -65,8 +76,8 @@ fun HabitItem(habit: Habit, onHabitCompleted: (Habit, Boolean) -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
-                checked = habit.isCompleted ?: false,
-                onCheckedChange = { onHabitCompleted(habit, it) }
+                checked = isCompleted,
+                onCheckedChange = { onHabitCompleted(it) }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Column {
