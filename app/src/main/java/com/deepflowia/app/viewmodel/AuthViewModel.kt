@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
-import io.github.jan.supabase.auth.SessionStatus
+import io.github.jan.supabase.gotrue.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -25,9 +25,9 @@ class AuthViewModel : ViewModel() {
                 Log.d("AuthViewModel", "Nouveau statut de session : $status")
                 _authState.value = when (status) {
                     is SessionStatus.Authenticated -> AuthState.SignedIn
+                    is SessionStatus.Initializing -> AuthState.Loading
                     is SessionStatus.NotAuthenticated -> AuthState.SignedOut
-                    is SessionStatus.LoadingFromStorage -> AuthState.Loading
-                    is SessionStatus.NetworkError -> AuthState.Error("Erreur réseau")
+                    is SessionStatus.RefreshFailure -> AuthState.Error(status.cause.message ?: "Erreur de rafraîchissement de la session")
                 }
             }
             .launchIn(viewModelScope)
