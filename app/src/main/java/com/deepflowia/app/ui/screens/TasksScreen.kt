@@ -69,22 +69,18 @@ fun TasksScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -> Unit) {
-    Row(
+    ListItem(
+        headlineContent = { Text(task.title) },
+        supportingContent = { task.description?.let { Text(it) } },
+        leadingContent = {
+            Checkbox(
+                checked = task.completed,
+                onCheckedChange = onTaskCompleted
+            )
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onTaskClicked)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        ListItem(
-            headlineContent = { Text(task.title) },
-            supportingContent = { task.description?.let { Text(it) } },
-            leadingContent = {
-                Checkbox(
-                    checked = task.completed,
-                    onCheckedChange = onTaskCompleted
-                )
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        onClick = onTaskClicked
+    )
 }
