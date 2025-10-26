@@ -1,14 +1,11 @@
 package com.deepflowia.app.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.deepflowia.app.ui.screens.LoadingScreen
 import com.deepflowia.app.ui.screens.AIScreen
 import com.deepflowia.app.ui.screens.GoalsScreen
 import com.deepflowia.app.ui.screens.HabitsScreen
@@ -28,12 +25,14 @@ fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel = viewModel()
 ) {
-    val authState by authViewModel.authState.collectAsState()
+    val authState = authViewModel.authState.collectAsState()
 
-    NavHost(navController = navController, startDestination = "loading") {
-        composable("loading") {
-            LoadingScreen()
-        }
+    val startDestination = when (authState.value) {
+        is AuthState.SignedIn -> BottomNavItem.Home.route
+        else -> "login"
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
@@ -93,25 +92,6 @@ fun NavGraph(
                     }
                 }
             )
-        }
-    }
-
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.SignedIn -> {
-                navController.navigate(BottomNavItem.Home.route) {
-                    popUpTo("loading") { inclusive = true }
-                    popUpTo("login") { inclusive = true }
-                    popUpTo("signup") { inclusive = true }
-                }
-            }
-            is AuthState.SignedOut -> {
-                navController.navigate("login") {
-                    popUpTo("loading") { inclusive = true }
-                    popUpTo(BottomNavItem.Home.route) { inclusive = true }
-                }
-            }
-            else -> Unit
         }
     }
 }

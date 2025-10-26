@@ -11,8 +11,8 @@ data class Task(
     val userId: String,
     val title: String,
     val description: String? = null,
-    @SerialName("completed")
-    val completed: Boolean? = false,
+    @SerialName("is_completed")
+    val isCompleted: Boolean? = false,
     @SerialName("due_date")
     val dueDate: String? = null,
     @SerialName("offline_id")

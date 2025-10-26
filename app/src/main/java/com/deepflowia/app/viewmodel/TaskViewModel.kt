@@ -47,7 +47,7 @@ class TaskViewModel : ViewModel() {
                 SupabaseManager.client.postgrest.from("tasks").update({
                     set("title", task.title)
                     set("description", task.description)
-                    set("completed", task.completed)
+                    set("is_completed", task.isCompleted)
                 }) {
                     filter {
                         eq("id", it)
