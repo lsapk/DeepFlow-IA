@@ -11,9 +11,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import java.time.LocalDate
 
 class HabitViewModel : ViewModel() {
 
@@ -33,7 +31,7 @@ class HabitViewModel : ViewModel() {
                 val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
                 _habits.value = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
 
-                val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date.toString()
+                val today = LocalDate.now().toString()
                 val completions = SupabaseManager.client.postgrest.from("habit_completions").select {
                     filter {
                         eq("user_id", userId)
@@ -65,7 +63,7 @@ class HabitViewModel : ViewModel() {
             try {
                 val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
                 val habitId = habit.id ?: return@launch
-                val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date.toString()
+                val today = LocalDate.now().toString()
 
                 if (isCompleted) {
                     val completion = HabitCompletion(userId = user.id, habitId = habitId, completedDate = today)
