@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.SignedOut)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
     val authState: StateFlow<AuthState> = _authState
 
     init {
@@ -81,6 +81,7 @@ class AuthViewModel : ViewModel() {
 }
 
 sealed class AuthState {
+    object Initializing : AuthState()
     object SignedIn : AuthState()
     object SignedOut : AuthState()
     object Loading : AuthState()

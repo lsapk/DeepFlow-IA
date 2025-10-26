@@ -13,26 +13,41 @@ import com.deepflowia.app.ui.screens.HomeScreen
 import com.deepflowia.app.ui.screens.JournalScreen
 import com.deepflowia.app.ui.screens.ProfileScreen
 import com.deepflowia.app.ui.screens.TaskDetailScreen
+import com.deepflowia.app.ui.screens.LoadingScreen
 import com.deepflowia.app.ui.screens.TasksScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.AuthState
 import com.deepflowia.app.viewmodel.TaskViewModel
+import androidx.compose.runtime.LaunchedEffect
+
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel = viewModel()
 ) {
-    val authState = authViewModel.authState.collectAsState()
+    val authState = authViewModel.authState.collectAsState().value
 
-    val startDestination = when (authState.value) {
-        is AuthState.SignedIn -> BottomNavItem.Home.route
-        else -> "login"
+    LaunchedEffect(authState) {
+        val newRoute = when (authState) {
+            is AuthState.SignedIn -> BottomNavItem.Home.route
+            is AuthState.SignedOut -> "login"
+            else -> null // Ne rien faire pour Initializing, Loading, etc.
+        }
+
+        newRoute?.let {
+            navController.navigate(it) {
+                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+            }
+        }
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = "loading") {
+        composable("loading") {
+            LoadingScreen()
+        }
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
