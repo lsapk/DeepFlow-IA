@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.gotrue.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -16,7 +17,23 @@ class AuthViewModel : ViewModel() {
     val authState: StateFlow<AuthState> = _authState
 
     init {
-        Log.d("AuthViewModel", "ViewModel initialisé.")
+        viewModelScope.launch {
+            SupabaseManager.client.auth.sessionStatus.collect { status ->
+                when (status) {
+                    is SessionStatus.Authenticated -> {
+                        _authState.value = AuthState.SignedIn
+                        Log.d("AuthViewModel", "L'utilisateur est authentifié.")
+                    }
+                    is SessionStatus.NotAuthenticated -> {
+                        _authState.value = AuthState.SignedOut
+                        Log.d("AuthViewModel", "L'utilisateur n'est pas authentifié.")
+                    }
+                    else -> {
+                        Log.d("AuthViewModel", "État de la session : $status")
+                    }
+                }
+            }
+        }
     }
 
     fun signUp(emailValue: String, passwordValue: String) {
@@ -28,7 +45,6 @@ class AuthViewModel : ViewModel() {
                     email = emailValue
                     password = passwordValue
                 }
-                _authState.value = AuthState.SignedIn
                 Log.d("AuthViewModel", "Inscription réussie pour l'email : $emailValue")
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Une erreur est survenue lors de l'inscription")
@@ -46,7 +62,6 @@ class AuthViewModel : ViewModel() {
                     email = emailValue
                     password = passwordValue
                 }
-                _authState.value = AuthState.SignedIn
                 Log.d("AuthViewModel", "Connexion réussie pour l'email : $emailValue")
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Une erreur est survenue lors de la connexion")
@@ -60,7 +75,6 @@ class AuthViewModel : ViewModel() {
             Log.d("AuthViewModel", "Tentative de déconnexion.")
             try {
                 SupabaseManager.client.auth.signOut()
-                _authState.value = AuthState.SignedOut
                 Log.d("AuthViewModel", "Déconnexion réussie.")
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Une erreur est survenue lors de la déconnexion")
