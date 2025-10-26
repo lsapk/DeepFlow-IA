@@ -70,8 +70,8 @@ fun TasksScreen(
 @Composable
 fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -> Unit) {
     ListItem(
-        headlineText = { Text(task.title) },
-        supportingText = { task.description?.let { Text(it) } },
+        headlineContent = { Text(task.title) },
+        supportingContent = { task.description?.let { Text(it) } },
         leadingContent = {
             Checkbox(
                 checked = task.completed ?: false,
