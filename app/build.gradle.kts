@@ -75,7 +75,6 @@ dependencies {
     // Supabase & Ktor
     implementation(platform("io.github.jan-tennert.supabase:bom:3.2.5"))
     implementation(platform("io.ktor:ktor-bom:3.3.1"))
-    implementation("io.github.jan-tennert.supabase:gotrue-kt:3.2.5")
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:storage-kt")
