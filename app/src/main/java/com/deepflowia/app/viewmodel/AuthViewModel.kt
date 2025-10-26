@@ -23,10 +23,7 @@ class AuthViewModel : ViewModel() {
                 _authState.value = when (status) {
                     is SessionStatus.Authenticated -> AuthState.SignedIn
                     is SessionStatus.NotAuthenticated -> AuthState.SignedOut
-                    is SessionStatus.Initializing -> AuthState.Initializing
-                    is SessionStatus.LoadingFromStorage -> AuthState.Initializing
-                    is SessionStatus.NetworkError -> AuthState.Error("Erreur réseau")
-                    is SessionStatus.RefreshFailure -> AuthState.Error(status.cause.message ?: "Impossible de rafraîchir la session")
+                    else -> AuthState.Initializing
                 }
             }
         }
