@@ -1,6 +1,5 @@
 package com.deepflowia.app.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
@@ -11,7 +10,9 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class HabitViewModel : ViewModel() {
 
@@ -22,84 +23,106 @@ class HabitViewModel : ViewModel() {
     val habitCompletions: StateFlow<Set<String>> = _habitCompletions
 
     init {
-        fetchHabitsAndCompletions()
+        fetchHabits()
+        fetchHabitCompletions()
     }
 
-    private fun fetchHabitsAndCompletions() {
-        viewModelScope.launch {
-            try {
-                val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
-                _habits.value = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
+    private fun todayDateString(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return sdf.format(Date())
+    }
 
-                val today = LocalDate.now().toString()
-                val completions = SupabaseManager.client.postgrest.from("habit_completions").select {
-                    filter {
-                        eq("user_id", userId)
-                        eq("completed_date", today)
-                    }
-                }.decodeList<HabitCompletion>()
-                _habitCompletions.value = completions.map { it.habitId }.toSet()
-            } catch (e: Exception) {
-                Log.e("HabitViewModel", "Erreur lors de la récupération des habitudes et complétions", e)
-            }
+    fun fetchHabits() {
+        viewModelScope.launch {
+            val result = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
+            _habits.value = result
         }
     }
+
+    fun fetchHabitCompletions() {
+        viewModelScope.launch {
+            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
+            val result = SupabaseManager.client.postgrest.from("habit_completions").select {
+                filter {
+                    eq("user_id", userId)
+                    eq("completed_date", todayDateString())
+                }
+            }.decodeList<HabitCompletion>()
+            _habitCompletions.value = result.mapNotNull { it.habitId }.toSet()
+        }
+    }
+
 
     fun addHabit(title: String, description: String) {
         viewModelScope.launch {
-            try {
-                val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
-                val habit = Habit(userId = user.id, title = title, description = description)
+            val user = SupabaseManager.client.auth.currentUserOrNull()
+            if (user != null) {
+                val habit = Habit(
+                    userId = user.id,
+                    title = title,
+                    description = description
+                )
                 SupabaseManager.client.postgrest.from("habits").insert(habit)
-                fetchHabitsAndCompletions()
-            } catch (e: Exception) {
-                Log.e("HabitViewModel", "Erreur lors de l'ajout d'une habitude", e)
+                fetchHabits()
             }
         }
     }
 
-    fun toggleHabitCompletion(habit: Habit, isCompleted: Boolean) {
+    fun completeHabit(habitId: String) {
         viewModelScope.launch {
-            try {
-                val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
-                val habitId = habit.id ?: return@launch
-                val today = LocalDate.now().toString()
+            val user = SupabaseManager.client.auth.currentUserOrNull()
+            if (user != null) {
+                val completion = HabitCompletion(
+                    habitId = habitId,
+                    userId = user.id,
+                    completedDate = todayDateString()
+                )
+                SupabaseManager.client.postgrest.from("habit_completions").insert(completion)
+                fetchHabitCompletions() // Refresh completions
+            }
+        }
+    }
 
-                if (isCompleted) {
-                    val completion = HabitCompletion(userId = user.id, habitId = habitId, completedDate = today)
-                    SupabaseManager.client.postgrest.from("habit_completions").insert(completion)
-                } else {
-                    SupabaseManager.client.postgrest.from("habit_completions").delete {
-                        filter {
-                            eq("habit_id", habitId)
-                            eq("user_id", user.id)
-                            eq("completed_date", today)
-                        }
+    fun uncompleteHabit(habitId: String) {
+        viewModelScope.launch {
+            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
+            SupabaseManager.client.postgrest.from("habit_completions").delete {
+                filter {
+                    eq("habit_id", habitId)
+                    eq("user_id", userId)
+                    eq("completed_date", todayDateString())
+                }
+            }
+            fetchHabitCompletions() // Refresh completions
+        }
+    }
+
+
+    fun updateHabit(habit: Habit) {
+        viewModelScope.launch {
+            habit.id?.let {
+                SupabaseManager.client.postgrest.from("habits").update({
+                    set("title", habit.title)
+                    set("description", habit.description)
+                }) {
+                    filter {
+                        eq("id", it)
                     }
                 }
-                val currentCompletions = _habitCompletions.value.toMutableSet()
-                if (isCompleted) {
-                    currentCompletions.add(habitId)
-                } else {
-                    currentCompletions.remove(habitId)
-                }
-                _habitCompletions.value = currentCompletions
-            } catch (e: Exception) {
-                Log.e("HabitViewModel", "Erreur lors du changement de statut de l'habitude", e)
+                fetchHabits()
             }
         }
     }
 
     fun deleteHabit(habit: Habit) {
         viewModelScope.launch {
-            try {
-                habit.id?.let {
-                    SupabaseManager.client.postgrest.from("habit_completions").delete { filter { eq("habit_id", it) } }
-                    SupabaseManager.client.postgrest.from("habits").delete { filter { eq("id", it) } }
-                    fetchHabitsAndCompletions()
+            habit.id?.let {
+                SupabaseManager.client.postgrest.from("habits").delete {
+                    filter {
+                        eq("id", it)
+                    }
                 }
-            } catch (e: Exception) {
-                Log.e("HabitViewModel", "Erreur lors de la suppression de l'habitude", e)
+                fetchHabits()
             }
         }
     }

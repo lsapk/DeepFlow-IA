@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,7 +21,7 @@ fun TasksScreen(
     navController: NavController,
     taskViewModel: TaskViewModel = viewModel()
 ) {
-    val tasks = taskViewModel.tasks.collectAsState()
+    val tasks by taskViewModel.tasks.collectAsState()
     var showCompleted by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -38,7 +37,7 @@ fun TasksScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { /* TODO: Add new task */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add task")
+                Icon(Icons.Default.Add, contentDescription = "Ajouter une tâche")
             }
         }
     ) { innerPadding ->
@@ -47,16 +46,18 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            val filteredTasks = tasks.value.filter { it.isCompleted == showCompleted }
+            val filteredTasks = tasks.filter { (it.completed ?: false) == showCompleted }
             LazyColumn {
                 items(filteredTasks) { task ->
                     TaskItem(
                         task = task,
                         onTaskClicked = {
-                            navController.navigate("task_detail/${task.id}")
+                            task.id?.let {
+                                navController.navigate("task_detail/$it")
+                            }
                         },
-                        onTaskCompleted = { taskToUpdate, completed ->
-                            taskViewModel.updateTask(taskToUpdate.copy(isCompleted = completed))
+                        onTaskCompleted = { completed ->
+                            taskViewModel.updateTask(task.copy(completed = completed))
                         }
                     )
                 }
@@ -65,27 +66,21 @@ fun TasksScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskItem(task: Task, onTaskClicked: (Task) -> Unit, onTaskCompleted: (Task, Boolean) -> Unit) {
-    Card(
+fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -> Unit) {
+    ListItem(
+        headlineContent = { Text(task.title) },
+        supportingContent = { task.description?.let { Text(it) } },
+        leadingContent = {
+            Checkbox(
+                checked = task.completed ?: false,
+                onCheckedChange = onTaskCompleted
+            )
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable { onTaskClicked(task) }
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = task.isCompleted ?: false,
-                onCheckedChange = { onTaskCompleted(task, it) }
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(text = task.title, style = MaterialTheme.typography.titleMedium)
-                Text(text = task.description ?: "", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-    }
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .clickable(onClick = onTaskClicked)
+    )
 }
