@@ -50,21 +50,11 @@ fun NavGraph(
         }
         composable("login") {
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
                 onNavigateToSignup = { navController.navigate("signup") }
             )
         }
         composable("signup") {
             SignupScreen(
-                onSignupSuccess = {
-                    navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("signup") { inclusive = true }
-                    }
-                },
                 onNavigateToLogin = { navController.navigate("login") }
             )
         }
@@ -100,13 +90,7 @@ fun NavGraph(
             AIScreen()
         }
         composable(BottomNavItem.Profile.route) {
-            ProfileScreen(
-                onNavigateToLogin = {
-                    navController.navigate("login") {
-                        popUpTo(BottomNavItem.Home.route) { inclusive = true }
-                    }
-                }
-            )
+            ProfileScreen()
         }
     }
 }

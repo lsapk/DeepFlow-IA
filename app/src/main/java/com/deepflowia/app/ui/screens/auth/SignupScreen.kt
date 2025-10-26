@@ -19,13 +19,11 @@ import com.deepflowia.app.viewmodel.AuthState
 @Composable
 fun SignupScreen(
     authViewModel: AuthViewModel = viewModel(),
-    onSignupSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     val confirmPassword = remember { mutableStateOf("") }
-    val authState = authViewModel.authState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -75,16 +73,6 @@ fun SignupScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Already have an account? Sign in")
-        }
-    }
-
-    when (authState.value) {
-        is AuthState.SignedIn -> onSignupSuccess()
-        is AuthState.Error -> {
-            // Show error message
-        }
-        else -> {
-            // Show loading or signed out
         }
     }
 }
