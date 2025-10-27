@@ -15,11 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import android.content.Intent
+import android.net.Uri
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
 
@@ -63,7 +66,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 PreferencesSection(isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
                 Spacer(modifier = Modifier.height(24.dp))
-                SupportSection()
+                SupportSection(navController)
                 Spacer(modifier = Modifier.height(32.dp))
                 LogoutButton(
                     onClick = {
@@ -159,7 +162,8 @@ fun PreferencesSection(
 }
 
 @Composable
-fun SupportSection() {
+fun SupportSection(navController: NavController) {
+    val context = LocalContext.current
     Column {
         Text("SUPPORT", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
@@ -167,11 +171,16 @@ fun SupportSection() {
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            SettingsItem(icon = Icons.Filled.HelpOutline, title = "Aide/FAQ", onClick = { /* TODO */ })
+            SettingsItem(icon = Icons.Filled.HelpOutline, title = "Aide/FAQ", onClick = { navController.navigate("help") })
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
-            SettingsItem(icon = Icons.Default.MailOutline, title = "Contact", onClick = { /* TODO */ })
+            SettingsItem(icon = Icons.Default.MailOutline, title = "Contact", onClick = {
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("mailto:Deepflow.ia@gmail.com")
+                }
+                context.startActivity(intent)
+            })
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
-            SettingsItem(icon = Icons.Filled.ReceiptLong, title = "Conditions d'utilisation", onClick = { /* TODO */ })
+            SettingsItem(icon = Icons.Filled.ReceiptLong, title = "Conditions d'utilisation", onClick = { navController.navigate("terms") })
         }
     }
 }

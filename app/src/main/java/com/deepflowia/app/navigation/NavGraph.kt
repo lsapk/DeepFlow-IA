@@ -15,10 +15,12 @@ import androidx.navigation.compose.composable
 import com.deepflowia.app.ui.screens.AIScreen
 import com.deepflowia.app.ui.screens.GoalsScreen
 import com.deepflowia.app.ui.screens.HabitsScreen
+import com.deepflowia.app.ui.screens.HelpScreen
 import com.deepflowia.app.ui.screens.HomeScreen
 import com.deepflowia.app.ui.screens.JournalScreen
 import com.deepflowia.app.ui.screens.ProfileScreen
 import com.deepflowia.app.ui.screens.TaskDetailScreen
+import com.deepflowia.app.ui.screens.TermsScreen
 import com.deepflowia.app.ui.screens.TasksScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
@@ -107,6 +109,12 @@ fun NavGraph(
                     }
                 }
             )
+        }
+        composable("help") {
+            HelpScreen(navController = navController)
+        }
+        composable("terms") {
+            TermsScreen(navController = navController)
         }
     }
 }
