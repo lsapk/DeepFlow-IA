@@ -10,24 +10,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-import io.github.jan.supabase.gotrue.SessionStatus
-
 class AuthViewModel : ViewModel() {
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.SignedOut)
     val authState: StateFlow<AuthState> = _authState
 
     init {
-        viewModelScope.launch {
-            SupabaseManager.client.auth.sessionStatus.collect { status ->
-                Log.d("AuthViewModel", "Nouveau statut de session : $status")
-                _authState.value = when (status) {
-                    is SessionStatus.Authenticated -> AuthState.SignedIn
-                    is SessionStatus.NotAuthenticated -> AuthState.SignedOut
-                    else -> AuthState.Initializing
-                }
-            }
-        }
+        Log.d("AuthViewModel", "ViewModel initialisé.")
     }
 
     fun signUp(emailValue: String, passwordValue: String) {
@@ -82,7 +71,6 @@ class AuthViewModel : ViewModel() {
 }
 
 sealed class AuthState {
-    object Initializing : AuthState()
     object SignedIn : AuthState()
     object SignedOut : AuthState()
     object Loading : AuthState()

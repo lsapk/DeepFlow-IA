@@ -13,47 +13,43 @@ import com.deepflowia.app.ui.screens.HomeScreen
 import com.deepflowia.app.ui.screens.JournalScreen
 import com.deepflowia.app.ui.screens.ProfileScreen
 import com.deepflowia.app.ui.screens.TaskDetailScreen
-import com.deepflowia.app.ui.screens.LoadingScreen
 import com.deepflowia.app.ui.screens.TasksScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.AuthState
 import com.deepflowia.app.viewmodel.TaskViewModel
-import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel = viewModel()
 ) {
-    val authState = authViewModel.authState.collectAsState().value
+    val authState = authViewModel.authState.collectAsState()
 
-    LaunchedEffect(authState) {
-        val newRoute = when (authState) {
-            is AuthState.SignedIn -> BottomNavItem.Home.route
-            is AuthState.SignedOut -> "login"
-            else -> null // Ne rien faire pour Initializing, Loading, etc.
-        }
-
-        newRoute?.let {
-            navController.navigate(it) {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-            }
-        }
+    val startDestination = when (authState.value) {
+        is AuthState.SignedIn -> BottomNavItem.Home.route
+        else -> "login"
     }
 
-    NavHost(navController = navController, startDestination = "loading") {
-        composable("loading") {
-            LoadingScreen()
-        }
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
             LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(BottomNavItem.Home.route) {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
                 onNavigateToSignup = { navController.navigate("signup") }
             )
         }
         composable("signup") {
             SignupScreen(
+                onSignupSuccess = {
+                    navController.navigate(BottomNavItem.Home.route) {
+                        popUpTo("signup") { inclusive = true }
+                    }
+                },
                 onNavigateToLogin = { navController.navigate("login") }
             )
         }
@@ -89,7 +85,13 @@ fun NavGraph(
             AIScreen()
         }
         composable(BottomNavItem.Profile.route) {
-            ProfileScreen()
+            ProfileScreen(
+                onNavigateToLogin = {
+                    navController.navigate("login") {
+                        popUpTo(BottomNavItem.Home.route) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

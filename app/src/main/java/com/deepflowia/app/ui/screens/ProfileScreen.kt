@@ -15,7 +15,8 @@ import com.deepflowia.app.viewmodel.AuthViewModel
 
 @Composable
 fun ProfileScreen(
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    onNavigateToLogin: () -> Unit
 ) {
     val darkMode = remember { mutableStateOf(false) }
     val notifications = remember { mutableStateOf(true) }
@@ -71,6 +72,7 @@ fun ProfileScreen(
         Button(
             onClick = {
                 authViewModel.signOut()
+                onNavigateToLogin()
             },
             modifier = Modifier.fillMaxWidth()
         ) {
