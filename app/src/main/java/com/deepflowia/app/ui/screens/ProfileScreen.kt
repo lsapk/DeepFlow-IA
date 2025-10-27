@@ -1,6 +1,5 @@
 package com.deepflowia.app.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -14,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -23,15 +21,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.deepflowia.app.viewmodel.AuthViewModel
+import com.deepflowia.app.viewmodel.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController,
     authViewModel: AuthViewModel = viewModel(),
+    themeViewModel: ThemeViewModel = viewModel(),
     onNavigateToLogin: () -> Unit
 ) {
-    val darkMode = remember { mutableStateOf(false) }
+    val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
     val notifications = remember { mutableStateOf(true) }
 
     Scaffold(
@@ -44,11 +44,11 @@ fun ProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF0F0F0)
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = Color(0xFFF0F0F0)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -61,7 +61,7 @@ fun ProfileScreen(
             Column(Modifier.padding(horizontal = 16.dp)) {
                 AccountSection()
                 Spacer(modifier = Modifier.height(24.dp))
-                PreferencesSection(darkMode, notifications)
+                PreferencesSection(isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
                 Spacer(modifier = Modifier.height(24.dp))
                 SupportSection()
                 Spacer(modifier = Modifier.height(32.dp))
@@ -89,7 +89,7 @@ fun ProfileHeader() {
             imageVector = Icons.Default.AccountCircle,
             contentDescription = "Avatar",
             modifier = Modifier.size(80.dp),
-            tint = Color.LightGray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -103,11 +103,11 @@ fun ProfileHeader() {
 @Composable
 fun AccountSection() {
     Column {
-        Text("COMPTE", fontWeight = FontWeight.SemiBold, color = Color.Gray, fontSize = 14.sp)
+        Text("COMPTE", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             SettingsItem(
                 icon = Icons.Default.Lock,
@@ -120,26 +120,27 @@ fun AccountSection() {
 
 @Composable
 fun PreferencesSection(
-    darkMode: MutableState<Boolean>,
+    isDarkTheme: Boolean,
+    onThemeToggle: () -> Unit,
     notifications: MutableState<Boolean>
 ) {
     Column {
-        Text("PRÉFÉRENCES DE L'APPLICATION", fontWeight = FontWeight.SemiBold, color = Color.Gray, fontSize = 14.sp)
+        Text("PRÉFÉRENCES DE L'APPLICATION", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             SettingsItem(
                 icon = Icons.Default.Brightness4,
                 title = "Mode sombre",
                 trailingContent = {
                     Switch(
-                        checked = darkMode.value,
-                        onCheckedChange = { darkMode.value = it }
+                        checked = isDarkTheme,
+                        onCheckedChange = { onThemeToggle() }
                     )
                 },
-                onClick = { darkMode.value = !darkMode.value }
+                onClick = { onThemeToggle() }
             )
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
             SettingsItem(
@@ -160,11 +161,11 @@ fun PreferencesSection(
 @Composable
 fun SupportSection() {
     Column {
-        Text("SUPPORT", fontWeight = FontWeight.SemiBold, color = Color.Gray, fontSize = 14.sp)
+        Text("SUPPORT", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             SettingsItem(icon = Icons.Filled.HelpOutline, title = "Aide/FAQ", onClick = { /* TODO */ })
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -180,7 +181,7 @@ fun SettingsItem(
     icon: ImageVector,
     title: String,
     trailingContent: @Composable (() -> Unit)? = {
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     },
     onClick: () -> Unit
 ) {
@@ -209,7 +210,7 @@ fun LogoutButton(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)) // Garder une couleur distincte pour la déconnexion
     ) {
         Icon(Icons.Filled.ExitToApp, contentDescription = null)
         Spacer(modifier = Modifier.width(8.dp))

@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -48,7 +47,7 @@ fun TasksScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF0F0F0)
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
@@ -58,10 +57,10 @@ fun TasksScreen(
                 shape = CircleShape,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Ajouter une tâche", tint = Color.White)
+                Icon(Icons.Default.Add, contentDescription = "Ajouter une tâche", tint = MaterialTheme.colorScheme.onPrimary)
             }
         },
-        containerColor = Color(0xFFF0F0F0)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -69,7 +68,7 @@ fun TasksScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp)) // Space for where filter chips were
+            Spacer(modifier = Modifier.height(16.dp))
 
             val filteredTasks = tasks.filter { it.completed == showCompleted }
 
@@ -105,7 +104,7 @@ fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -
     val interactionSource = remember { MutableInteractionSource() }
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
@@ -136,7 +135,7 @@ fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     textDecoration = if (task.completed) TextDecoration.LineThrough else null,
-                    color = if (task.completed) Color.Gray else Color.Black
+                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
                 task.description?.let {
                     if (it.isNotBlank()) {
@@ -144,7 +143,7 @@ fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -
                         Text(
                             text = it,
                             fontSize = 14.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

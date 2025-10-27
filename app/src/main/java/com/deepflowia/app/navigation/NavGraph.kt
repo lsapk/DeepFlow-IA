@@ -84,13 +84,13 @@ fun NavGraph(
             }
         }
         composable("habits") {
-            HabitsScreen()
+            HabitsScreen(navController = navController)
         }
         composable("goals") {
-            GoalsScreen()
+            GoalsScreen(navController = navController)
         }
         composable("journal") {
-            JournalScreen()
+            JournalScreen(navController = navController)
         }
         composable(BottomNavItem.AI.route) {
             AIScreen()

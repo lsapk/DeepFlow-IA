@@ -1,25 +1,30 @@
 package com.deepflowia.app.ui.screens
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.deepflowia.app.models.Habit
 import com.deepflowia.app.viewmodel.HabitViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitsScreen(
+    navController: NavController,
     habitViewModel: HabitViewModel = viewModel()
 ) {
     val habits by habitViewModel.habits.collectAsState()
@@ -28,37 +33,50 @@ fun HabitsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Habitudes") }
+                title = { Text("Habitudes", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Add new habit */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Ajouter une habitude")
+            FloatingActionButton(
+                onClick = { /* TODO: Add new habit */ },
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Ajouter une habitude", tint = MaterialTheme.colorScheme.onPrimary)
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(innerPadding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            LazyColumn {
-                items(habits) { habit ->
-                    val isCompleted = completedHabitIds.contains(habit.id)
-                    HabitItem(
-                        habit = habit,
-                        isCompleted = isCompleted,
-                        onHabitCompleted = { checked ->
-                            habit.id?.let { id ->
-                                if (checked) {
-                                    habitViewModel.completeHabit(id)
-                                } else {
-                                    habitViewModel.uncompleteHabit(id)
-                                }
+            items(habits, key = { it.id!! }) { habit ->
+                val isCompleted = completedHabitIds.contains(habit.id)
+                HabitItem(
+                    habit = habit,
+                    isCompleted = isCompleted,
+                    onHabitCompleted = { checked ->
+                        habit.id?.let { id ->
+                            if (checked) {
+                                habitViewModel.completeHabit(id)
+                            } else {
+                                habitViewModel.uncompleteHabit(id)
                             }
                         }
-                    )
-                }
+                    }
+                )
             }
         }
     }
@@ -66,23 +84,36 @@ fun HabitsScreen(
 
 @Composable
 fun HabitItem(habit: Habit, isCompleted: Boolean, onHabitCompleted: (Boolean) -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
     Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null, // Désactive l'effet d'ondulation
+                onClick = { onHabitCompleted(!isCompleted) }
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
                 checked = isCompleted,
-                onCheckedChange = { onHabitCompleted(it) }
+                onCheckedChange = onHabitCompleted
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = habit.title, style = MaterialTheme.typography.titleMedium)
-                Text(text = habit.description ?: "", style = MaterialTheme.typography.bodyMedium)
+                habit.description?.let {
+                    if (it.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         }
     }
