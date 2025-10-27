@@ -103,7 +103,7 @@ fun GoalItem(
             }
             Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
-                progress = { (goal.progress ?: 0) / 100f },
+                progress = (goal.progress ?: 0) / 100f,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
