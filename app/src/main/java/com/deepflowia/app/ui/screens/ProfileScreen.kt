@@ -8,9 +8,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.automirrored.filled.Logout
-import aimport androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,7 +43,7 @@ fun ProfileScreen(
                 title = { Text("Paramètres & Profil", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -112,7 +113,7 @@ fun AccountSection() {
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             SettingsItem(
-                icon = Icons.Default.LockOutline,
+                icon = Icons.Default.Lock,
                 title = "Changer le mot de passe",
                 onClick = { /* TODO */ }
             )
@@ -208,7 +209,7 @@ fun LogoutButton(onClick: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
     ) {
-        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
+        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
         Spacer(modifier = Modifier.width(8.dp))
         Text("Se déconnecter", fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }

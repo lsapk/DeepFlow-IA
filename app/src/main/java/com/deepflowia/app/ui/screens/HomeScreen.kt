@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -39,7 +39,7 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
 ) {
     val features = listOf(
-        Feature("Tâches", Icons.AutoMirrored.Filled.ListAlt, Color(0xFF6A1B9A), onNavigateToTasks),
+        Feature("Tâches", Icons.AutoMirrored.Filled.List, Color(0xFF6A1B9A), onNavigateToTasks),
         Feature("Habitudes", Icons.Default.SyncAlt, Color(0xFF0277BD), onNavigateToHabits),
         Feature("Objectifs", Icons.Default.CheckCircleOutline, Color(0xFF2E7D32), onNavigateToGoals),
         Feature("Journal", Icons.Default.Book, Color(0xFFD84315), onNavigateToJournal),
