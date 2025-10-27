@@ -8,10 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,7 +39,7 @@ fun ProfileScreen(
                 title = { Text("Paramètres & Profil", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Retour")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -169,11 +165,11 @@ fun SupportSection() {
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            SettingsItem(icon = Icons.AutoMirrored.Filled.HelpOutline, title = "Aide/FAQ", onClick = { /* TODO */ })
+            SettingsItem(icon = Icons.Filled.HelpOutline, title = "Aide/FAQ", onClick = { /* TODO */ })
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
             SettingsItem(icon = Icons.Default.MailOutline, title = "Contact", onClick = { /* TODO */ })
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
-            SettingsItem(icon = Icons.AutoMirrored.Filled.ReceiptLong, title = "Conditions d'utilisation", onClick = { /* TODO */ })
+            SettingsItem(icon = Icons.Filled.ReceiptLong, title = "Conditions d'utilisation", onClick = { /* TODO */ })
         }
     }
 }
@@ -209,7 +205,7 @@ fun LogoutButton(onClick: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373))
     ) {
-        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
+        Icon(Icons.Filled.ExitToApp, contentDescription = null)
         Spacer(modifier = Modifier.width(8.dp))
         Text("Se déconnecter", fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
