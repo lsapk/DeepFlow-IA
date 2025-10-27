@@ -4,9 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -76,7 +73,7 @@ fun HomeScreen(
         ) {
             ReportCard()
             Spacer(modifier = Modifier.height(24.dp))
-            FeaturesGrid(features = features)
+            FeaturesGrid(features = features, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -107,27 +104,44 @@ fun ReportCard() {
 }
 
 @Composable
-fun FeaturesGrid(features: List<Feature>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+fun FeaturesGrid(features: List<Feature>, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(features) { feature ->
-            FeatureCard(feature = feature)
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            FeatureCard(feature = features[0], modifier = Modifier.weight(1f))
+            FeatureCard(feature = features[1], modifier = Modifier.weight(1f))
+        }
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            FeatureCard(feature = features[2], modifier = Modifier.weight(1f))
+            FeatureCard(feature = features[3], modifier = Modifier.weight(1f))
+        }
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            FeatureCard(feature = features[4], modifier = Modifier.weight(1f))
+            FeatureCard(feature = features[5], modifier = Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-fun FeatureCard(feature: Feature) {
+fun FeatureCard(feature: Feature, modifier: Modifier = Modifier) {
     val interactionSource = remember { MutableInteractionSource() }
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .aspectRatio(1f)
+        modifier = modifier
+            .fillMaxHeight()
             .clickable(
                 interactionSource = interactionSource,
                 indication = null, // Désactive l'effet d'ondulation

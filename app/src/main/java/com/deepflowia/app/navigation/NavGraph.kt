@@ -25,11 +25,13 @@ import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.AuthState
 import com.deepflowia.app.viewmodel.TaskViewModel
+import com.deepflowia.app.viewmodel.ThemeViewModel
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    themeViewModel: ThemeViewModel
 ) {
     val authState = authViewModel.authState.collectAsState()
 
@@ -98,6 +100,7 @@ fun NavGraph(
         composable(BottomNavItem.Profile.route) {
             ProfileScreen(
                 navController = navController,
+                themeViewModel = themeViewModel,
                 onNavigateToLogin = {
                     navController.navigate("login") {
                         popUpTo(BottomNavItem.Home.route) { inclusive = true }
