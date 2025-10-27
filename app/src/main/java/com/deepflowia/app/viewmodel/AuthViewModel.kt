@@ -4,7 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
-import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.SessionStatus
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,11 +13,20 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.SignedOut)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
     val authState: StateFlow<AuthState> = _authState
 
     init {
-        Log.d("AuthViewModel", "ViewModel initialisé.")
+        viewModelScope.launch {
+            SupabaseManager.client.auth.sessionStatus.collect { status ->
+                Log.d("AuthViewModel", "Statut de la session Supabase : $status")
+                _authState.value = when (status) {
+                    is SessionStatus.Authenticated -> AuthState.SignedIn
+                    is SessionStatus.NotAuthenticated -> AuthState.SignedOut
+                    else -> AuthState.Loading
+                }
+            }
+        }
     }
 
     fun signUp(emailValue: String, passwordValue: String) {
@@ -71,6 +81,7 @@ class AuthViewModel : ViewModel() {
 }
 
 sealed class AuthState {
+    object Initializing : AuthState()
     object SignedIn : AuthState()
     object SignedOut : AuthState()
     object Loading : AuthState()

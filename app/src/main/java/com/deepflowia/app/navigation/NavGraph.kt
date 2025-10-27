@@ -1,7 +1,13 @@
 package com.deepflowia.app.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -27,29 +33,33 @@ fun NavGraph(
 ) {
     val authState = authViewModel.authState.collectAsState()
 
-    val startDestination = when (authState.value) {
-        is AuthState.SignedIn -> BottomNavItem.Home.route
-        else -> "login"
+    LaunchedEffect(authState.value) {
+        when (authState.value) {
+            is AuthState.SignedIn -> {
+                navController.navigate(BottomNavItem.Home.route) {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                }
+            }
+            is AuthState.SignedOut -> {
+                navController.navigate("login") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                }
+            }
+            else -> Unit
+        }
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = "loading") {
+        composable("loading") { LoadingScreen() }
         composable("login") {
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
+                onLoginSuccess = { /* La navigation est gérée par LaunchedEffect */ },
                 onNavigateToSignup = { navController.navigate("signup") }
             )
         }
         composable("signup") {
             SignupScreen(
-                onSignupSuccess = {
-                    navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("signup") { inclusive = true }
-                    }
-                },
+                onSignupSuccess = { /* La navigation est gérée par LaunchedEffect */ },
                 onNavigateToLogin = { navController.navigate("login") }
             )
         }
@@ -93,5 +103,15 @@ fun NavGraph(
                 }
             )
         }
+    }
+}
+
+@Composable
+fun LoadingScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
     }
 }
