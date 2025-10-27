@@ -22,7 +22,6 @@ import com.deepflowia.app.viewmodel.AuthState
 import com.deepflowia.app.viewmodel.TaskViewModel
 import androidx.compose.runtime.LaunchedEffect
 
-
 @Composable
 fun NavGraph(
     navController: NavHostController,
