@@ -68,7 +68,8 @@ fun NavGraph(
                 onNavigateToTasks = { navController.navigate("tasks") },
                 onNavigateToHabits = { navController.navigate("habits") },
                 onNavigateToGoals = { navController.navigate("goals") },
-                onNavigateToJournal = { navController.navigate("journal") }
+                onNavigateToJournal = { navController.navigate("journal") },
+                onNavigateToProfile = { navController.navigate(BottomNavItem.Profile.route) }
             )
         }
         composable("tasks") {
@@ -96,6 +97,7 @@ fun NavGraph(
         }
         composable(BottomNavItem.Profile.route) {
             ProfileScreen(
+                navController = navController,
                 onNavigateToLogin = {
                     navController.navigate("login") {
                         popUpTo(BottomNavItem.Home.route) { inclusive = true }
