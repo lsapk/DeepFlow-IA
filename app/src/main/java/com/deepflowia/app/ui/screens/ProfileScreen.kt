@@ -2,6 +2,7 @@ package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -183,10 +184,15 @@ fun SettingsItem(
     },
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null, // Désactive l'effet d'ondulation
+                onClick = onClick
+            )
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

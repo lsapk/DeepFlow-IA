@@ -1,6 +1,7 @@
 package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -101,12 +102,17 @@ fun TasksScreen(
 
 @Composable
 fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onTaskClicked),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null, // Désactive l'effet d'ondulation
+                onClick = onTaskClicked
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(

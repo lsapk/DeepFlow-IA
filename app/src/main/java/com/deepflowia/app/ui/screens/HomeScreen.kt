@@ -2,6 +2,7 @@ package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -119,13 +120,18 @@ fun FeaturesGrid(features: List<Feature>) {
 
 @Composable
 fun FeatureCard(feature: Feature) {
+    val interactionSource = remember { MutableInteractionSource() }
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier
             .aspectRatio(1f)
-            .clickable(onClick = feature.onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null, // Désactive l'effet d'ondulation
+                onClick = feature.onClick
+            )
     ) {
         Column(
             modifier = Modifier
