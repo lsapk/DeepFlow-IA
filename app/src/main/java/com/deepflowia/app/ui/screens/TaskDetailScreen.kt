@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.deepflowia.app.models.Task
 import com.deepflowia.app.viewmodel.TaskViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
