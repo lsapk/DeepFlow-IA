@@ -48,6 +48,8 @@ class TaskViewModel : ViewModel() {
                     set("title", task.title)
                     set("description", task.description)
                     set("completed", task.completed)
+                    set("due_date", task.dueDate)
+                    set("priority", task.priority)
                 }) {
                     filter {
                         eq("id", it)

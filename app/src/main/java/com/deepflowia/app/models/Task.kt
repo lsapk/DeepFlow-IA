@@ -15,6 +15,7 @@ data class Task(
     val completed: Boolean = false,
     @SerialName("due_date")
     val dueDate: String? = null,
+    val priority: String? = null,
     @SerialName("offline_id")
     val offlineId: String? = null,
     @SerialName("synced_at")

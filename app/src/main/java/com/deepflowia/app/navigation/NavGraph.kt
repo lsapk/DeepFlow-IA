@@ -81,11 +81,7 @@ fun NavGraph(
         }
         composable("task_detail/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId")
-            val taskViewModel: TaskViewModel = viewModel()
-            val task = taskViewModel.tasks.collectAsState().value.find { it.id == taskId }
-            if (task != null) {
-                TaskDetailScreen(task = task)
-            }
+            TaskDetailScreen(taskId = taskId, navController = navController)
         }
         composable("habits") {
             HabitsScreen(navController = navController)
