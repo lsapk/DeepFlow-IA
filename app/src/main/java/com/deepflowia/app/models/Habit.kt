@@ -16,7 +16,7 @@ data class Habit(
     val streak: Int? = 0,
     val category: String? = null,
     @SerialName("days_of_week")
-    val daysOfWeek: List<String>? = null,
+    val daysOfWeek: List<Int>? = null,
     @SerialName("offline_id")
     val offlineId: String? = null,
     @SerialName("synced_at")

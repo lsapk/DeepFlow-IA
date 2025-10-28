@@ -206,7 +206,6 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onConfirm: (Habit) -> U
     var target by remember { mutableStateOf(habit.target?.toString() ?: "") }
     var category by remember { mutableStateOf(habit.category ?: "") }
     val daysOfWeek = listOf("L", "M", "M", "J", "V", "S", "D")
-    val dayCodes = listOf("mon", "tue", "wed", "thu", "fri", "sat", "sun")
     var selectedDays by remember { mutableStateOf(habit.daysOfWeek?.toSet() ?: emptySet()) }
 
     AlertDialog(
@@ -239,14 +238,14 @@ fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onConfirm: (Habit) -> U
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     daysOfWeek.forEachIndexed { index, day ->
-                        val dayCode = dayCodes[index]
+                        val dayNumber = index + 1
                         FilterChip(
-                            selected = selectedDays.contains(dayCode),
+                            selected = selectedDays.contains(dayNumber),
                             onClick = {
-                                selectedDays = if (selectedDays.contains(dayCode)) {
-                                    selectedDays - dayCode
+                                selectedDays = if (selectedDays.contains(dayNumber)) {
+                                    selectedDays - dayNumber
                                 } else {
-                                    selectedDays + dayCode
+                                    selectedDays + dayNumber
                                 }
                             },
                             label = { Text(day) }
