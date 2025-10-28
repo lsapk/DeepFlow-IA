@@ -12,7 +12,11 @@ data class Habit(
     val title: String,
     val description: String? = null,
     val frequency: String? = null,
+    val target: Int? = null,
     val streak: Int? = 0,
+    val category: String? = null,
+    @SerialName("days_of_week")
+    val daysOfWeek: List<String>? = null,
     @SerialName("offline_id")
     val offlineId: String? = null,
     @SerialName("synced_at")

@@ -104,6 +104,9 @@ class HabitViewModel : ViewModel() {
                 SupabaseManager.client.postgrest.from("habits").update({
                     set("title", habit.title)
                     set("description", habit.description)
+                    set("target", habit.target)
+                    set("category", habit.category)
+                    set("days_of_week", habit.daysOfWeek)
                 }) {
                     filter {
                         eq("id", it)
