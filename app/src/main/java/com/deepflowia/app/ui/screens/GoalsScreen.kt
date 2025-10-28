@@ -1,7 +1,6 @@
 package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,12 +9,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -46,7 +47,7 @@ fun GoalsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Add new goal */ },
+                onClick = { navController.navigate("goal_detail/-1") },
                 shape = CircleShape,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
@@ -60,15 +61,17 @@ fun GoalsScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(goals, key = { it.id!! }) { goal ->
                 GoalItem(
                     goal = goal,
-                    onIncreaseProgress = { goalToUpdate ->
-                        val newProgress = ((goalToUpdate.progress ?: 0) + 10).coerceAtMost(100)
-                        goalViewModel.updateGoal(goalToUpdate.copy(progress = newProgress))
-                    }
+                    onGoalClicked = {
+                        navController.navigate("goal_detail/${goal.id}")
+                    },
+                    onToggleCompletion = { goalViewModel.toggleCompletion(goal) },
+                    onUpdateProgress = { change -> goalViewModel.updateGoalProgress(goal, change) },
+                    onDelete = { goalViewModel.deleteGoal(goal) }
                 )
             }
         }
@@ -78,23 +81,35 @@ fun GoalsScreen(
 @Composable
 fun GoalItem(
     goal: Goal,
-    onIncreaseProgress: (Goal) -> Unit
+    onGoalClicked: () -> Unit,
+    onToggleCompletion: () -> Unit,
+    onUpdateProgress: (Int) -> Unit,
+    onDelete: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null, // Désactive l'effet d'ondulation
-                onClick = { onIncreaseProgress(goal) }
-            ),
+            .clickable(onClick = onGoalClicked),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = goal.title, style = MaterialTheme.typography.titleMedium)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = goal.completed,
+                    onCheckedChange = { onToggleCompletion() }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = goal.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    textDecoration = if (goal.completed) TextDecoration.LineThrough else TextDecoration.None
+                )
+            }
             goal.description?.let {
                 if (it.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -102,19 +117,39 @@ fun GoalItem(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            LinearProgressIndicator(
-                progress = (goal.progress ?: 0) / 100f,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                strokeCap = StrokeCap.Round
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "${goal.progress ?: 0}%",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.align(Alignment.End)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LinearProgressIndicator(
+                    progress = (goal.progress ?: 0) / 100f,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(8.dp),
+                    strokeCap = StrokeCap.Round
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = "${goal.progress ?: 0}%",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row {
+                    Button(onClick = { onUpdateProgress(-10) }, enabled = !goal.completed) {
+                        Text("-10%")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { onUpdateProgress(10) }, enabled = !goal.completed) {
+                        Text("+10%")
+                    }
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Supprimer l'objectif", tint = MaterialTheme.colorScheme.error)
+                }
+            }
         }
     }
 }

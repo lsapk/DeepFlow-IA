@@ -14,6 +14,8 @@ data class Goal(
     val progress: Int? = 0,
     @SerialName("due_date")
     val dueDate: String? = null,
+    val completed: Boolean = false,
+    val category: String? = null,
     @SerialName("offline_id")
     val offlineId: String? = null,
     @SerialName("synced_at")
