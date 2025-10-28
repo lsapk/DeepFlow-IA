@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -98,12 +99,42 @@ fun HabitDetailScreen(
                 label = { Text("Catégorie") },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
-                value = frequency,
-                onValueChange = { frequency = it },
-                label = { Text("Fréquence (ex: journalier, hebdomadaire)") },
-                modifier = Modifier.fillMaxWidth()
+            val frequencyOptions = listOf("Journalier", "Hebdomadaire", "Mensuel")
+            val frequencyMapping = mapOf(
+                "Journalier" to "daily",
+                "Hebdomadaire" to "weekly",
+                "Mensuel" to "monthly"
             )
+            var expanded by remember { mutableStateOf(false) }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = frequencyMapping.entries.find { it.value == frequency }?.key ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Fréquence") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    frequencyOptions.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                frequency = frequencyMapping[selectionOption]!!
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.weight(1f))
             Button(
                 onClick = {
