@@ -94,9 +94,9 @@ fun TaskDetailScreen(
                         onClick = {
                             val updatedTask = task.copy(
                                 title = title,
-                                description = description,
-                                priority = priority,
-                                dueDate = dueDate
+                                description = description.ifBlank { null },
+                                priority = priority.ifBlank { null },
+                                dueDate = dueDate.ifBlank { null }
                             )
                             coroutineScope.launch {
                                 taskViewModel.updateTask(updatedTask)
