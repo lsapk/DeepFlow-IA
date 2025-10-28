@@ -24,5 +24,7 @@ data class Habit(
     @SerialName("updated_at")
     val updatedAt: String? = null,
     @SerialName("linked_goal_id")
-    val linkedGoalId: String? = null
+    val linkedGoalId: String? = null,
+    @SerialName("is_archived")
+    val isArchived: Boolean = false
 )

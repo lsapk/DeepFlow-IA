@@ -44,7 +44,7 @@ fun JournalScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Add new journal entry */ },
+                onClick = { navController.navigate("journal_detail/-1") },
                 shape = CircleShape,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
@@ -61,7 +61,7 @@ fun JournalScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(journalEntries, key = { it.id!! }) { journalEntry ->
-                JournalItem(journalEntry = journalEntry, onClick = { /* TODO: Navigate to detail */ })
+                JournalItem(journalEntry = journalEntry, onClick = { navController.navigate("journal_detail/${journalEntry.id}") })
             }
         }
     }

@@ -15,9 +15,11 @@ import androidx.navigation.compose.composable
 import com.deepflowia.app.ui.screens.AIScreen
 import com.deepflowia.app.ui.screens.GoalDetailScreen
 import com.deepflowia.app.ui.screens.GoalsScreen
+import com.deepflowia.app.ui.screens.HabitDetailScreen
 import com.deepflowia.app.ui.screens.HabitsScreen
 import com.deepflowia.app.ui.screens.HelpScreen
 import com.deepflowia.app.ui.screens.HomeScreen
+import com.deepflowia.app.ui.screens.JournalDetailScreen
 import com.deepflowia.app.ui.screens.JournalScreen
 import com.deepflowia.app.ui.screens.ProfileScreen
 import com.deepflowia.app.ui.screens.TaskDetailScreen
@@ -87,6 +89,10 @@ fun NavGraph(
         composable("habits") {
             HabitsScreen(navController = navController)
         }
+        composable("habit_detail/{habitId}") { backStackEntry ->
+            val habitId = backStackEntry.arguments?.getString("habitId")
+            HabitDetailScreen(habitId = habitId, navController = navController)
+        }
         composable("goals") {
             GoalsScreen(navController = navController)
         }
@@ -96,6 +102,10 @@ fun NavGraph(
         }
         composable("journal") {
             JournalScreen(navController = navController)
+        }
+        composable("journal_detail/{journalId}") { backStackEntry ->
+            val journalId = backStackEntry.arguments?.getString("journalId")
+            JournalDetailScreen(journalId = journalId, navController = navController)
         }
         composable(BottomNavItem.AI.route) {
             AIScreen()

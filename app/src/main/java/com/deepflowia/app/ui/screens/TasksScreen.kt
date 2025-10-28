@@ -53,7 +53,7 @@ fun TasksScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Add new task */ },
+                onClick = { navController.navigate("task_detail/-1") },
                 shape = CircleShape,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {

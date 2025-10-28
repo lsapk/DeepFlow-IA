@@ -26,16 +26,12 @@ class JournalViewModel : ViewModel() {
         }
     }
 
-    fun addJournalEntry(title: String, content: String) {
+    fun createJournalEntry(journalEntry: JournalEntry) {
         viewModelScope.launch {
             val user = SupabaseManager.client.auth.currentUserOrNull()
             if (user != null) {
-                val journalEntry = JournalEntry(
-                    userId = user.id,
-                    title = title,
-                    content = content
-                )
-                SupabaseManager.client.postgrest.from("journal_entries").insert(journalEntry)
+                val newJournalEntry = journalEntry.copy(userId = user.id)
+                SupabaseManager.client.postgrest.from("journal_entries").insert(newJournalEntry)
                 fetchJournalEntries()
             }
         }

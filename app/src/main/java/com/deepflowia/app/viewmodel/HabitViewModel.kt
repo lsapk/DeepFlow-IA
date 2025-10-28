@@ -22,6 +22,9 @@ class HabitViewModel : ViewModel() {
     private val _habitCompletions = MutableStateFlow<Set<String>>(emptySet())
     val habitCompletions: StateFlow<Set<String>> = _habitCompletions
 
+    private val _showArchived = MutableStateFlow(false)
+    val showArchived: StateFlow<Boolean> = _showArchived
+
     init {
         fetchHabits()
         fetchHabitCompletions()
@@ -32,9 +35,18 @@ class HabitViewModel : ViewModel() {
         return sdf.format(Date())
     }
 
+    fun toggleShowArchived() {
+        _showArchived.value = !_showArchived.value
+        fetchHabits()
+    }
+
     fun fetchHabits() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
+            val result = SupabaseManager.client.postgrest.from("habits").select {
+                filter {
+                    eq("is_archived", _showArchived.value)
+                }
+            }.decodeList<Habit>()
             _habits.value = result
         }
     }
@@ -53,16 +65,12 @@ class HabitViewModel : ViewModel() {
     }
 
 
-    fun addHabit(title: String, description: String) {
+    fun createHabit(habit: Habit) {
         viewModelScope.launch {
             val user = SupabaseManager.client.auth.currentUserOrNull()
             if (user != null) {
-                val habit = Habit(
-                    userId = user.id,
-                    title = title,
-                    description = description
-                )
-                SupabaseManager.client.postgrest.from("habits").insert(habit)
+                val newHabit = habit.copy(userId = user.id)
+                SupabaseManager.client.postgrest.from("habits").insert(newHabit)
                 fetchHabits()
             }
         }
@@ -106,7 +114,9 @@ class HabitViewModel : ViewModel() {
                     set("description", habit.description)
                     set("target", habit.target)
                     set("category", habit.category)
+                    set("frequency", habit.frequency)
                     set("days_of_week", habit.daysOfWeek)
+                    set("is_archived", habit.isArchived)
                 }) {
                     filter {
                         eq("id", it)

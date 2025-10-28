@@ -32,8 +32,7 @@ fun HabitsScreen(
 ) {
     val habits by habitViewModel.habits.collectAsState()
     val completedHabitIds by habitViewModel.habitCompletions.collectAsState()
-    var showEditDialog by remember { mutableStateOf<Habit?>(null) }
-    var showDeleteDialog by remember { mutableStateOf<Habit?>(null) }
+    val showArchived by habitViewModel.showArchived.collectAsState()
 
     Scaffold(
         topBar = {
@@ -44,6 +43,11 @@ fun HabitsScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
+                actions = {
+                    TextButton(onClick = { habitViewModel.toggleShowArchived() }) {
+                        Text(if (showArchived) "Voir actives" else "Voir archivées")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -51,7 +55,7 @@ fun HabitsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Add new habit */ },
+                onClick = { navController.navigate("habit_detail/-1") },
                 shape = CircleShape,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
@@ -81,32 +85,10 @@ fun HabitsScreen(
                             }
                         }
                     },
-                    onEdit = { showEditDialog = habit },
-                    onDelete = { showDeleteDialog = habit }
+                    onEdit = { navController.navigate("habit_detail/${habit.id}") },
+                    onDelete = { habitViewModel.deleteHabit(habit) }
                 )
             }
-        }
-
-        showEditDialog?.let { habit ->
-            EditHabitDialog(
-                habit = habit,
-                onDismiss = { showEditDialog = null },
-                onConfirm = { updatedHabit ->
-                    habitViewModel.updateHabit(updatedHabit)
-                    showEditDialog = null
-                }
-            )
-        }
-
-        showDeleteDialog?.let { habit ->
-            DeleteHabitDialog(
-                habit = habit,
-                onDismiss = { showDeleteDialog = null },
-                onConfirm = {
-                    habitViewModel.deleteHabit(habit)
-                    showDeleteDialog = null
-                }
-            )
         }
     }
 }
@@ -119,22 +101,22 @@ fun HabitItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var showMenu by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
 
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null, // Désactive l'effet d'ondulation
+                onClick = onEdit
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = { onHabitCompleted(!isCompleted) }
-                )
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -152,127 +134,6 @@ fun HabitItem(
                     }
                 }
             }
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Options")
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Modifier") },
-                        onClick = {
-                            onEdit()
-                            showMenu = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Supprimer") },
-                        onClick = {
-                            onDelete()
-                            showMenu = false
-                        }
-                    )
-                }
-            }
         }
     }
-}
-
-@Composable
-fun DeleteHabitDialog(habit: Habit, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Supprimer l'habitude") },
-        text = { Text("Êtes-vous sûr de vouloir supprimer l'habitude \"${habit.title}\" ? Cette action est irréversible.") },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Confirmer")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Annuler")
-            }
-        }
-    )
-}
-
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
-@Composable
-fun EditHabitDialog(habit: Habit, onDismiss: () -> Unit, onConfirm: (Habit) -> Unit) {
-    var description by remember { mutableStateOf(habit.description ?: "") }
-    var target by remember { mutableStateOf(habit.target?.toString() ?: "") }
-    var category by remember { mutableStateOf(habit.category ?: "") }
-    val daysOfWeek = listOf("L", "M", "M", "J", "V", "S", "D")
-    var selectedDays by remember { mutableStateOf(habit.daysOfWeek?.toSet() ?: emptySet()) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Modifier l'habitude") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = target,
-                    onValueChange = { target = it },
-                    label = { Text("Objectif numérique") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = category,
-                    onValueChange = { category = it },
-                    label = { Text("Catégorie") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text("Jours de la semaine :", style = MaterialTheme.typography.labelMedium)
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    daysOfWeek.forEachIndexed { index, day ->
-                        val dayNumber = index + 1
-                        FilterChip(
-                            selected = selectedDays.contains(dayNumber),
-                            onClick = {
-                                selectedDays = if (selectedDays.contains(dayNumber)) {
-                                    selectedDays - dayNumber
-                                } else {
-                                    selectedDays + dayNumber
-                                }
-                            },
-                            label = { Text(day) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val updatedHabit = habit.copy(
-                        description = description.ifBlank { null },
-                        target = target.toIntOrNull(),
-                        category = category.ifBlank { null },
-                        daysOfWeek = selectedDays.toList().sorted()
-                    )
-                    onConfirm(updatedHabit)
-                }
-            ) {
-                Text("Sauvegarder")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Annuler")
-            }
-        }
-    )
 }
