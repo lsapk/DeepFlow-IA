@@ -107,35 +107,38 @@ fun HabitDetailScreen(
             Spacer(modifier = Modifier.weight(1f))
             Button(
                 onClick = {
-                    coroutineScope.launch {
-                        if (isNewHabit) {
-                            habitViewModel.createHabit(
-                                Habit(
-                                    title = title,
-                                    description = description.ifBlank { null },
-                                    target = target.toIntOrNull(),
-                                    category = category.ifBlank { null },
-                                    frequency = frequency.ifBlank { null },
-                                    userId = "" // Will be set by ViewModel
+                    val finalTarget = target.toIntOrNull()
+                    if (finalTarget != null) {
+                        coroutineScope.launch {
+                            if (isNewHabit) {
+                                habitViewModel.createHabit(
+                                    Habit(
+                                        title = title,
+                                        description = description.ifBlank { null },
+                                        target = finalTarget,
+                                        category = category.ifBlank { null },
+                                        frequency = frequency,
+                                        userId = "" // Will be set by ViewModel
+                                    )
                                 )
-                            )
-                        } else {
-                            habitToEdit?.let {
-                                val updatedHabit = it.copy(
-                                    title = title,
-                                    description = description.ifBlank { null },
-                                    target = target.toIntOrNull(),
-                                    category = category.ifBlank { null },
-                                    frequency = frequency.ifBlank { null }
-                                )
-                                habitViewModel.updateHabit(updatedHabit)
+                            } else {
+                                habitToEdit?.let {
+                                    val updatedHabit = it.copy(
+                                        title = title,
+                                        description = description.ifBlank { null },
+                                        target = finalTarget,
+                                        category = category.ifBlank { null },
+                                        frequency = frequency
+                                    )
+                                    habitViewModel.updateHabit(updatedHabit)
+                                }
                             }
+                            navController.popBackStack()
                         }
-                        navController.popBackStack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank() && frequency.isNotBlank() && target.toIntOrNull() != null
             ) {
                 Text(if (isNewHabit) "Créer l'habitude" else "Enregistrer les modifications")
             }

@@ -26,16 +26,12 @@ class TaskViewModel : ViewModel() {
         }
     }
 
-    fun addTask(title: String, description: String) {
+    fun createTask(task: Task) {
         viewModelScope.launch {
             val user = SupabaseManager.client.auth.currentUserOrNull()
             if (user != null) {
-                val task = Task(
-                    userId = user.id,
-                    title = title,
-                    description = description
-                )
-                SupabaseManager.client.postgrest.from("tasks").insert(task)
+                val newTask = task.copy(userId = user.id)
+                SupabaseManager.client.postgrest.from("tasks").insert(newTask)
                 fetchTasks()
             }
         }
