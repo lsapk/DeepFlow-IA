@@ -43,10 +43,9 @@ class ReflectionViewModel : ViewModel() {
                     val result = SupabaseManager.client.postgrest.from("daily_reflections")
                         .select {
                             filter { eq("user_id", userId) }
-                            order("created_at", ascending = false)
                         }
                         .decodeList<DailyReflection>()
-                    _reflections.value = result
+                    _reflections.value = result.sortedByDescending { it.createdAt }
                 }
             } catch (e: Exception) {
                 Log.e("ReflectionViewModel", "Erreur lors de la récupération des réflexions", e)
