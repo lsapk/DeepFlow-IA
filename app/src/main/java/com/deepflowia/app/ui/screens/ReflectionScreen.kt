@@ -2,6 +2,7 @@ package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -96,7 +97,11 @@ fun QuestionPager(questions: List<String>, onQuestionSelected: (String) -> Unit)
             modifier = Modifier
                 .fillMaxWidth()
                 .height(150.dp)
-                .clickable { onQuestionSelected(questions[page]) },
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null, // Désactive l'effet d'ondulation
+                    onClick = { onQuestionSelected(questions[page]) }
+                ),
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
@@ -115,7 +120,11 @@ fun ReflectionItem(reflection: DailyReflection, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, // Désactive l'effet d'ondulation
+                onClick = { onClick() }
+            ),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
