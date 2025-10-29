@@ -19,6 +19,9 @@ class ReflectionViewModel : ViewModel() {
     private val _questions = MutableStateFlow<List<String>>(emptyList())
     val questions: StateFlow<List<String>> = _questions
 
+    private val _selectedReflection = MutableStateFlow<DailyReflection?>(null)
+    val selectedReflection: StateFlow<DailyReflection?> = _selectedReflection
+
     init {
         fetchQuestions()
         fetchReflections()
@@ -53,6 +56,26 @@ class ReflectionViewModel : ViewModel() {
         }
     }
 
+    fun getReflectionById(id: String) {
+        viewModelScope.launch {
+            try {
+                if (id == "-1") {
+                    _selectedReflection.value = null
+                    return@launch
+                }
+                val result = SupabaseManager.client.postgrest.from("daily_reflections")
+                    .select {
+                        filter { eq("id", id) }
+                    }
+                    .decodeSingleOrNull<DailyReflection>()
+                _selectedReflection.value = result
+            } catch (e: Exception) {
+                Log.e("ReflectionViewModel", "Erreur lors de la récupération de la réflexion", e)
+                _selectedReflection.value = null
+            }
+        }
+    }
+
     fun addReflection(question: String, answer: String) {
         viewModelScope.launch {
             try {
@@ -66,6 +89,41 @@ class ReflectionViewModel : ViewModel() {
                 fetchReflections()
             } catch (e: Exception) {
                 Log.e("ReflectionViewModel", "Erreur lors de l'ajout de la réflexion", e)
+            }
+        }
+    }
+
+    fun updateReflection(reflection: DailyReflection) {
+        viewModelScope.launch {
+            try {
+                reflection.id?.let {
+                    SupabaseManager.client.postgrest.from("daily_reflections")
+                        .update({
+                            set("question", reflection.question)
+                            set("answer", reflection.answer)
+                        }) {
+                            filter { eq("id", it) }
+                        }
+                    fetchReflections()
+                }
+            } catch (e: Exception) {
+                Log.e("ReflectionViewModel", "Erreur lors de la mise à jour de la réflexion", e)
+            }
+        }
+    }
+
+    fun deleteReflection(reflection: DailyReflection) {
+        viewModelScope.launch {
+            try {
+                reflection.id?.let {
+                    SupabaseManager.client.postgrest.from("daily_reflections")
+                        .delete {
+                            filter { eq("id", it) }
+                        }
+                    fetchReflections()
+                }
+            } catch (e: Exception) {
+                Log.e("ReflectionViewModel", "Erreur lors de la suppression de la réflexion", e)
             }
         }
     }

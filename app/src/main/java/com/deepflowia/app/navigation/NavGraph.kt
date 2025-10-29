@@ -12,27 +12,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.deepflowia.app.ui.screens.AIScreen
-import com.deepflowia.app.ui.screens.GoalDetailScreen
-import com.deepflowia.app.ui.screens.GoalsScreen
-import com.deepflowia.app.ui.screens.HabitDetailScreen
-import com.deepflowia.app.ui.screens.HabitsScreen
-import com.deepflowia.app.ui.screens.HelpScreen
-import com.deepflowia.app.ui.screens.HomeScreen
-import com.deepflowia.app.ui.screens.JournalDetailScreen
-import com.deepflowia.app.ui.screens.JournalScreen
-import com.deepflowia.app.ui.screens.ProfileScreen
-import com.deepflowia.app.ui.screens.TaskDetailScreen
-import com.deepflowia.app.ui.screens.TermsScreen
-import com.deepflowia.app.ui.screens.FocusScreen
-import com.deepflowia.app.ui.screens.TasksScreen
+import com.deepflowia.app.ui.screens.*
 import com.deepflowia.app.ui.screens.auth.LoginScreen
-import com.deepflowia.app.ui.screens.ReflectionDetailScreen
-import com.deepflowia.app.ui.screens.ReflectionScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.AuthState
-import com.deepflowia.app.viewmodel.TaskViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
 
 @Composable
@@ -84,37 +68,27 @@ fun NavGraph(
                 onNavigateToReflection = { navController.navigate("reflection") }
             )
         }
-        composable("tasks") {
-            TasksScreen(navController = navController)
-        }
+        composable("tasks") { TasksScreen(navController = navController) }
         composable("task_detail/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId")
             TaskDetailScreen(taskId = taskId, navController = navController)
         }
-        composable("habits") {
-            HabitsScreen(navController = navController)
-        }
+        composable("habits") { HabitsScreen(navController = navController) }
         composable("habit_detail/{habitId}") { backStackEntry ->
             val habitId = backStackEntry.arguments?.getString("habitId")
             HabitDetailScreen(habitId = habitId, navController = navController)
         }
-        composable("goals") {
-            GoalsScreen(navController = navController)
-        }
+        composable("goals") { GoalsScreen(navController = navController) }
         composable("goal_detail/{goalId}") { backStackEntry ->
             val goalId = backStackEntry.arguments?.getString("goalId")
             GoalDetailScreen(navController = navController, goalId = goalId)
         }
-        composable("journal") {
-            JournalScreen(navController = navController)
-        }
+        composable("journal") { JournalScreen(navController = navController) }
         composable("journal_detail/{journalId}") { backStackEntry ->
             val journalId = backStackEntry.arguments?.getString("journalId")
             JournalDetailScreen(journalId = journalId, navController = navController)
         }
-        composable(BottomNavItem.AI.route) {
-            AIScreen()
-        }
+        composable(BottomNavItem.AI.route) { AIScreen() }
         composable(BottomNavItem.Profile.route) {
             ProfileScreen(
                 navController = navController,
@@ -126,31 +100,20 @@ fun NavGraph(
                 }
             )
         }
-        composable("help") {
-            HelpScreen(navController = navController)
-        }
-        composable("terms") {
-            TermsScreen(navController = navController)
-        }
-        composable("focus") {
-            FocusScreen(navController = navController)
-        }
-        composable("reflection") {
-            ReflectionScreen(navController = navController)
-        }
-        composable("reflection_detail/{question}") { backStackEntry ->
-            val question = backStackEntry.arguments?.getString("question")
-            ReflectionDetailScreen(navController = navController, question = if (question == "-1") null else question)
+        composable("help") { HelpScreen(navController = navController) }
+        composable("terms") { TermsScreen(navController = navController) }
+        composable("focus") { FocusScreen(navController = navController) }
+        composable("reflection") { ReflectionScreen(navController = navController) }
+        composable("reflection_detail/{reflectionIdOrQuestion}") { backStackEntry ->
+            val reflectionIdOrQuestion = backStackEntry.arguments?.getString("reflectionIdOrQuestion")
+            ReflectionDetailScreen(navController = navController, reflectionIdOrQuestion = reflectionIdOrQuestion)
         }
     }
 }
 
 @Composable
 fun LoadingScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
 }

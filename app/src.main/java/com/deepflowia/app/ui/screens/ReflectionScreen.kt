@@ -70,12 +70,7 @@ fun ReflectionScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(reflections) { reflection ->
-                    ReflectionItem(
-                        reflection = reflection,
-                        onClick = {
-                            navController.navigate("reflection_detail/${reflection.id}")
-                        }
-                    )
+                    ReflectionItem(reflection = reflection)
                 }
             }
         }
@@ -111,11 +106,9 @@ fun QuestionPager(questions: List<String>, onQuestionSelected: (String) -> Unit)
 }
 
 @Composable
-fun ReflectionItem(reflection: DailyReflection, onClick: () -> Unit) {
+fun ReflectionItem(reflection: DailyReflection) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
