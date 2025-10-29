@@ -7,9 +7,7 @@ import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Goal
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class GoalViewModel : ViewModel() {
@@ -24,7 +22,7 @@ class GoalViewModel : ViewModel() {
         } else {
             goals.filter { !it.completed }
         }
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
 
     init {
