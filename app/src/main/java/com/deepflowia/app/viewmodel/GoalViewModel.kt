@@ -9,15 +9,30 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class GoalViewModel : ViewModel() {
 
     private val _goals = MutableStateFlow<List<Goal>>(emptyList())
-    val goals: StateFlow<List<Goal>> = _goals
+    private val _showCompleted = MutableStateFlow(false)
+
+    val showCompleted: StateFlow<Boolean> = _showCompleted
+    val filteredGoals: StateFlow<List<Goal>> = _goals.combine(_showCompleted) { goals, showCompleted ->
+        if (showCompleted) {
+            goals.filter { it.completed }
+        } else {
+            goals.filter { !it.completed }
+        }
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), emptyList())
+
 
     init {
         fetchGoals()
+    }
+
+    fun setShowCompleted(show: Boolean) {
+        _showCompleted.value = show
     }
 
     fun fetchGoals() {

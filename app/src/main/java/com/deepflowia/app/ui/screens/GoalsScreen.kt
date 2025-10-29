@@ -30,7 +30,8 @@ fun GoalsScreen(
     navController: NavController,
     goalViewModel: GoalViewModel = viewModel()
 ) {
-    val goals by goalViewModel.goals.collectAsState()
+    val goals by goalViewModel.filteredGoals.collectAsState()
+    val showCompleted by goalViewModel.showCompleted.collectAsState()
 
     Scaffold(
         topBar = {
@@ -57,23 +58,45 @@ fun GoalsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
         ) {
-            items(goals, key = { it.id!! }) { goal ->
-                GoalItem(
-                    goal = goal,
-                    onGoalClicked = {
-                        navController.navigate("goal_detail/${goal.id}")
-                    },
-                    onToggleCompletion = { goalViewModel.toggleCompletion(goal) },
-                    onUpdateProgress = { change -> goalViewModel.updateGoalProgress(goal, change) },
-                    onDelete = { goalViewModel.deleteGoal(goal) }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = !showCompleted,
+                    onClick = { goalViewModel.setShowCompleted(false) },
+                    label = { Text("En cours") }
                 )
+                FilterChip(
+                    selected = showCompleted,
+                    onClick = { goalViewModel.setShowCompleted(true) },
+                    label = { Text("Terminés") }
+                )
+            }
+
+            LazyColumn(
+                contentPadding = PaddingValues(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(goals, key = { it.id!! }) { goal ->
+                    GoalItem(
+                        goal = goal,
+                        onGoalClicked = {
+                            navController.navigate("goal_detail/${goal.id}")
+                        },
+                        onToggleCompletion = { goalViewModel.toggleCompletion(goal) },
+                        onUpdateProgress = { change -> goalViewModel.updateGoalProgress(goal, change) },
+                        onDelete = { goalViewModel.deleteGoal(goal) }
+                    )
+                }
             }
         }
     }
