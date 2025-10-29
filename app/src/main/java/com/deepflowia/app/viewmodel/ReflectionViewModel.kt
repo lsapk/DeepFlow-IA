@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.DailyReflection
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,9 +40,9 @@ class ReflectionViewModel : ViewModel() {
     fun fetchReflections() {
         viewModelScope.launch {
             try {
-                val userId = SupabaseManager.supabase.auth.currentUserOrNull()?.id
+                val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
                 if (userId != null) {
-                    val result = SupabaseManager.supabase.postgrest["daily_reflections"]
+                    val result = SupabaseManager.client.postgrest.from("daily_reflections")
                         .select {
                             filter { eq("user_id", userId) }
                             order("created_at", Order.DESC)
@@ -59,13 +59,13 @@ class ReflectionViewModel : ViewModel() {
     fun addReflection(question: String, answer: String) {
         viewModelScope.launch {
             try {
-                val userId = SupabaseManager.supabase.auth.currentUserOrNull()?.id ?: return@launch
+                val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
                 val newReflection = DailyReflection(
                     userId = userId,
                     question = question,
                     answer = answer
                 )
-                SupabaseManager.supabase.postgrest["daily_reflections"].insert(newReflection)
+                SupabaseManager.client.postgrest.from("daily_reflections").insert(newReflection)
                 // Rafraîchir la liste après l'ajout
                 fetchReflections()
             } catch (e: Exception) {

@@ -7,7 +7,7 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +20,7 @@ import androidx.navigation.NavController
 import com.deepflowia.app.services.FocusTimerService
 import java.util.concurrent.TimeUnit
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FocusScreen(navController: NavController) {
     val context = LocalContext.current
@@ -65,7 +66,7 @@ fun FocusScreen(navController: NavController) {
                 title = { Text("Mode Focus") },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Retour")
                     }
                 }
             )
@@ -115,6 +116,7 @@ fun FocusScreen(navController: NavController) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SetupUI(
     sessionTitle: String,

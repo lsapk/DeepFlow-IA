@@ -15,7 +15,7 @@ import androidx.core.app.NotificationCompat
 import com.deepflowia.app.MainActivity
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.FocusSession
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +23,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import java.util.UUID
 
 class FocusTimerService : Service() {
@@ -74,14 +75,14 @@ class FocusTimerService : Service() {
         _timeInMillis.value = durationMillis
         _timerState.value = TimerState.RUNNING
 
-        val userId = SupabaseManager.supabase.auth.currentUserOrNull()?.id
+        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
         if (userId != null && currentSession == null) {
             currentSession = FocusSession(
                 id = UUID.randomUUID().toString(),
                 userId = userId,
                 title = title,
                 duration = durationMinutes.toInt(),
-                startedAt = kotlinx.datetime.Clock.System.now().toString()
+                startedAt = Clock.System.now().toString()
             )
         }
 
@@ -110,7 +111,7 @@ class FocusTimerService : Service() {
         _timeInMillis.value = 0L
 
         currentSession?.let {
-            val finalSession = if (completed) it.copy(completedAt = kotlinx.datetime.Clock.System.now().toString()) else it
+            val finalSession = if (completed) it.copy(completedAt = Clock.System.now().toString()) else it
             saveSession(finalSession)
         }
         currentSession = null
@@ -122,7 +123,7 @@ class FocusTimerService : Service() {
     private fun saveSession(session: FocusSession) {
         serviceScope.launch {
             try {
-                SupabaseManager.supabase.postgrest["focus_sessions"].insert(session)
+                SupabaseManager.client.postgrest.from("focus_sessions").insert(session)
             } catch (e: Exception) {
                 Log.e("FocusTimerService", "Erreur lors de la sauvegarde de la session", e)
             }
