@@ -9,21 +9,42 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 class HabitViewModel : ViewModel() {
 
     private val _habits = MutableStateFlow<List<Habit>>(emptyList())
-    val habits: StateFlow<List<Habit>> = _habits
+    val habits: StateFlow<List<Habit>> get() = _filteredHabits
 
     private val _habitCompletions = MutableStateFlow<Set<String>>(emptySet())
     val habitCompletions: StateFlow<Set<String>> = _habitCompletions
 
     private val _showArchived = MutableStateFlow(false)
     val showArchived: StateFlow<Boolean> = _showArchived
+
+    private val _filteredHabits = combine(_habits, _showArchived) { habits, showArchived ->
+        val calendar = Calendar.getInstance()
+        // Calendar.DAY_OF_WEEK: Dimanche = 1, Lundi = 2, ..., Samedi = 7
+        // Notre logique: Lundi = 1, Mardi = 2, ..., Dimanche = 7
+        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+        val today = if (dayOfWeek == Calendar.SUNDAY) 7 else dayOfWeek - 1
+
+        habits.filter { habit ->
+            habit.isArchived == showArchived && (
+                    habit.frequency != "weekly" ||
+                            habit.daysOfWeek.isNullOrEmpty() ||
+                            habit.daysOfWeek.contains(today)
+                    )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
 
     init {
         fetchHabits()
@@ -37,17 +58,14 @@ class HabitViewModel : ViewModel() {
 
     fun toggleShowArchived() {
         _showArchived.value = !_showArchived.value
-        fetchHabits()
+        // Le combine s'occupe de rafraîchir la liste filtrée
     }
 
     fun fetchHabits() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("habits").select {
-                filter {
-                    eq("is_archived", _showArchived.value)
-                }
-            }.decodeList<Habit>()
-            _habits.value = result
+            // On récupère TOUTES les habitudes de l'utilisateur
+            val result = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
+            _habits.value = result // On stocke la liste brute
         }
     }
 
@@ -63,7 +81,6 @@ class HabitViewModel : ViewModel() {
             _habitCompletions.value = result.mapNotNull { it.habitId }.toSet()
         }
     }
-
 
     fun createHabit(habit: Habit) {
         viewModelScope.launch {
@@ -105,7 +122,6 @@ class HabitViewModel : ViewModel() {
         }
     }
 
-
     fun updateHabit(habit: Habit) {
         viewModelScope.launch {
             habit.id?.let {
@@ -137,6 +153,12 @@ class HabitViewModel : ViewModel() {
                 }
                 fetchHabits()
             }
+        }
+    }
+
+    fun toggleHabitArchived(habit: Habit) {
+        viewModelScope.launch {
+            updateHabit(habit.copy(isArchived = !habit.isArchived))
         }
     }
 }

@@ -6,6 +6,7 @@ import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.JournalEntry
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,7 +22,9 @@ class JournalViewModel : ViewModel() {
 
     fun fetchJournalEntries() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("journal_entries").select().decodeList<JournalEntry>()
+            val result = SupabaseManager.client.postgrest.from("journal_entries").select {
+                order("created_at", Order.DESCENDING)
+            }.decodeList<JournalEntry>()
             _journalEntries.value = result
         }
     }

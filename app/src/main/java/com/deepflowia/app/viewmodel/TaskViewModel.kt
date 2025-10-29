@@ -22,7 +22,14 @@ class TaskViewModel : ViewModel() {
     fun fetchTasks() {
         viewModelScope.launch {
             val result = SupabaseManager.client.postgrest.from("tasks").select().decodeList<Task>()
-            _tasks.value = result
+            _tasks.value = result.sortedWith(compareBy { task ->
+                when (task.priority) {
+                    "high" -> 0
+                    "medium" -> 1
+                    "low" -> 2
+                    else -> 3
+                }
+            })
         }
     }
 

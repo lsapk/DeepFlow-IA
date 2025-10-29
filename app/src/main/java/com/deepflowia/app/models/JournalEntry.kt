@@ -17,5 +17,7 @@ data class JournalEntry(
     @SerialName("synced_at")
     val syncedAt: String? = null,
     @SerialName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    @SerialName("created_at")
+    val createdAt: String? = null
 )

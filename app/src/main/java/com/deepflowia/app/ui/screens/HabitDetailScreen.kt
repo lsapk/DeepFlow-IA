@@ -37,6 +37,11 @@ fun HabitDetailScreen(
     var target by remember(habitToEdit) { mutableStateOf(habitToEdit?.target?.toString() ?: "") }
     var category by remember(habitToEdit) { mutableStateOf(habitToEdit?.category ?: "") }
     var frequency by remember(habitToEdit) { mutableStateOf(habitToEdit?.frequency ?: "") }
+    val selectedDays = remember(habitToEdit) {
+        mutableStateListOf<Int>().apply {
+            habitToEdit?.daysOfWeek?.let { addAll(it) }
+        }
+    }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -135,6 +140,31 @@ fun HabitDetailScreen(
                     }
                 }
             }
+            if (frequency == "weekly") {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Quels jours de la semaine ?", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    val days = listOf("L", "M", "M", "J", "V", "S", "D")
+                    days.forEachIndexed { index, day ->
+                        val dayIndex = index + 1
+                        FilterChip(
+                            selected = selectedDays.contains(dayIndex),
+                            onClick = {
+                                if (selectedDays.contains(dayIndex)) {
+                                    selectedDays.remove(dayIndex)
+                                } else {
+                                    selectedDays.add(dayIndex)
+                                }
+                            },
+                            label = { Text(day) }
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.weight(1f))
             Button(
                 onClick = {
@@ -149,6 +179,7 @@ fun HabitDetailScreen(
                                         target = finalTarget,
                                         category = category.ifBlank { null },
                                         frequency = frequency,
+                                        daysOfWeek = selectedDays.toList(),
                                         userId = "" // Will be set by ViewModel
                                     )
                                 )
@@ -159,7 +190,8 @@ fun HabitDetailScreen(
                                         description = description.ifBlank { null },
                                         target = finalTarget,
                                         category = category.ifBlank { null },
-                                        frequency = frequency
+                                        frequency = frequency,
+                                        daysOfWeek = selectedDays.toList()
                                     )
                                     habitViewModel.updateHabit(updatedHabit)
                                 }
