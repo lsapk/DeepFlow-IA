@@ -35,14 +35,16 @@ fun HomeScreen(
     onNavigateToGoals: () -> Unit,
     onNavigateToJournal: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToFocus: () -> Unit,
+    onNavigateToReflection: () -> Unit,
 ) {
     val features = listOf(
         Feature("Tâches", Icons.Filled.List, Color(0xFF6A1B9A), onNavigateToTasks),
         Feature("Habitudes", Icons.Default.SyncAlt, Color(0xFF0277BD), onNavigateToHabits),
         Feature("Objectifs", Icons.Default.CheckCircleOutline, Color(0xFF2E7D32), onNavigateToGoals),
         Feature("Journal", Icons.Default.Book, Color(0xFFD84315), onNavigateToJournal),
-        Feature("Focus", Icons.Default.CenterFocusStrong, Color(0xFFC62828), { /* TODO */ }),
-        Feature("Réflexion", Icons.Default.SelfImprovement, Color(0xFF283593), { /* TODO */ })
+        Feature("Focus", Icons.Default.CenterFocusStrong, Color(0xFFC62828), onNavigateToFocus),
+        Feature("Réflexion", Icons.Default.SelfImprovement, Color(0xFF283593), onNavigateToReflection)
     )
 
     Scaffold(

@@ -24,8 +24,11 @@ import com.deepflowia.app.ui.screens.JournalScreen
 import com.deepflowia.app.ui.screens.ProfileScreen
 import com.deepflowia.app.ui.screens.TaskDetailScreen
 import com.deepflowia.app.ui.screens.TermsScreen
+import com.deepflowia.app.ui.screens.FocusScreen
 import com.deepflowia.app.ui.screens.TasksScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
+import com.deepflowia.app.ui.screens.ReflectionDetailScreen
+import com.deepflowia.app.ui.screens.ReflectionScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.AuthState
@@ -76,7 +79,9 @@ fun NavGraph(
                 onNavigateToHabits = { navController.navigate("habits") },
                 onNavigateToGoals = { navController.navigate("goals") },
                 onNavigateToJournal = { navController.navigate("journal") },
-                onNavigateToProfile = { navController.navigate(BottomNavItem.Profile.route) }
+                onNavigateToProfile = { navController.navigate(BottomNavItem.Profile.route) },
+                onNavigateToFocus = { navController.navigate("focus") },
+                onNavigateToReflection = { navController.navigate("reflection") }
             )
         }
         composable("tasks") {
@@ -126,6 +131,16 @@ fun NavGraph(
         }
         composable("terms") {
             TermsScreen(navController = navController)
+        }
+        composable("focus") {
+            FocusScreen(navController = navController)
+        }
+        composable("reflection") {
+            ReflectionScreen(navController = navController)
+        }
+        composable("reflection_detail/{question}") { backStackEntry ->
+            val question = backStackEntry.arguments?.getString("question")
+            ReflectionDetailScreen(navController = navController, question = if (question == "-1") null else question)
         }
     }
 }
