@@ -23,7 +23,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.UUID
 
 class FocusTimerService : Service() {
@@ -50,6 +53,12 @@ class FocusTimerService : Service() {
         const val ACTION_STOP = "com.deepflowia.app.STOP"
         const val EXTRA_DURATION_MINUTES = "duration_minutes"
         const val EXTRA_SESSION_TITLE = "session_title"
+    }
+
+    private fun getCurrentTimestamp(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        return sdf.format(Date())
     }
 
     override fun onCreate() {
@@ -82,7 +91,7 @@ class FocusTimerService : Service() {
                 userId = userId,
                 title = title,
                 duration = durationMinutes.toInt(),
-                startedAt = Clock.System.now().toString()
+                startedAt = getCurrentTimestamp()
             )
         }
 
@@ -111,7 +120,7 @@ class FocusTimerService : Service() {
         _timeInMillis.value = 0L
 
         currentSession?.let {
-            val finalSession = if (completed) it.copy(completedAt = Clock.System.now().toString()) else it
+            val finalSession = if (completed) it.copy(completedAt = getCurrentTimestamp()) else it
             saveSession(finalSession)
         }
         currentSession = null
