@@ -7,7 +7,6 @@ import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.DailyReflection
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -26,7 +25,6 @@ class ReflectionViewModel : ViewModel() {
     }
 
     private fun fetchQuestions() {
-        // Dans une future version, ces questions pourraient venir d'une API ou d'une base de données distante.
         _questions.value = listOf(
             "Quelle a été ma plus grande réussite cette semaine et pourquoi ?",
             "Qu'est-ce que j'ai appris de nouveau aujourd'hui ?",
@@ -45,7 +43,7 @@ class ReflectionViewModel : ViewModel() {
                     val result = SupabaseManager.client.postgrest.from("daily_reflections")
                         .select {
                             filter { eq("user_id", userId) }
-                            order("created_at", Order.DESC)
+                            order("created_at", ascending = false)
                         }
                         .decodeList<DailyReflection>()
                     _reflections.value = result
@@ -66,7 +64,6 @@ class ReflectionViewModel : ViewModel() {
                     answer = answer
                 )
                 SupabaseManager.client.postgrest.from("daily_reflections").insert(newReflection)
-                // Rafraîchir la liste après l'ajout
                 fetchReflections()
             } catch (e: Exception) {
                 Log.e("ReflectionViewModel", "Erreur lors de l'ajout de la réflexion", e)
