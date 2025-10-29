@@ -84,6 +84,7 @@ dependencies {
     implementation("io.ktor:ktor-client-okhttp")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
 
 
     testImplementation("junit:junit:4.13.2")
