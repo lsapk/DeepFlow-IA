@@ -11,9 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.deepflowia.app.models.DailyReflection
 import com.deepflowia.app.viewmodel.ReflectionViewModel
 import java.net.URLDecoder
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,28 +23,36 @@ fun ReflectionDetailScreen(
     reflectionViewModel: ReflectionViewModel = viewModel()
 ) {
     val selectedReflection by reflectionViewModel.selectedReflection.collectAsState()
-    val isEditing = selectedReflection != null
 
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
+    var isEditing by remember { mutableStateOf(false) }
 
     LaunchedEffect(reflectionIdOrQuestion) {
         if (reflectionIdOrQuestion != null && reflectionIdOrQuestion != "-1") {
             try {
-                // Essayer de décoder comme ID UUID (modification)
+                // Essayer de parser comme UUID pour voir si c'est un ID
+                UUID.fromString(reflectionIdOrQuestion)
+                isEditing = true
                 reflectionViewModel.getReflectionById(reflectionIdOrQuestion)
-            } catch (e: Exception) {
-                // Sinon, traiter comme une question (création)
+            } catch (e: IllegalArgumentException) {
+                // Sinon, c'est une nouvelle question
+                isEditing = false
                 question = URLDecoder.decode(reflectionIdOrQuestion, "UTF-8")
-                reflectionViewModel.getReflectionById("-1") // Réinitialiser la sélection
+                answer = ""
+                reflectionViewModel.getReflectionById("-1")
             }
         } else {
-            reflectionViewModel.getReflectionById("-1") // Cas de la création libre
+            // Création libre
+            isEditing = false
+            question = "Réflexion Libre"
+            answer = ""
+            reflectionViewModel.getReflectionById("-1")
         }
     }
 
     LaunchedEffect(selectedReflection) {
-        if (selectedReflection != null) {
+        if (isEditing && selectedReflection != null) {
             question = selectedReflection!!.question
             answer = selectedReflection!!.answer
         }
@@ -75,7 +83,7 @@ fun ReflectionDetailScreen(
                                     val updatedReflection = selectedReflection!!.copy(question = question, answer = answer)
                                     reflectionViewModel.updateReflection(updatedReflection)
                                 } else {
-                                    reflectionViewModel.addReflection(question.ifEmpty { "Réflexion Libre" }, answer)
+                                    reflectionViewModel.addReflection(question, answer)
                                 }
                                 navController.navigateUp()
                             }
@@ -94,16 +102,14 @@ fun ReflectionDetailScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            if (isEditing || question.isNotEmpty()) {
-                OutlinedTextField(
-                    value = question,
-                    onValueChange = { question = it },
-                    label = { Text("Question") },
-                    modifier = Modifier.fillMaxWidth(),
-                    readOnly = isEditing // On ne peut pas modifier la question d'une réflexion existante
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            OutlinedTextField(
+                value = question,
+                onValueChange = { if (!isEditing) question = it },
+                label = { Text("Question") },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = isEditing
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = answer,
                 onValueChange = { answer = it },

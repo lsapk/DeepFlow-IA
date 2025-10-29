@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.deepflowia.app.MainActivity
+import com.deepflowia.app.R
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.FocusSession
 import io.github.jan.supabase.auth.auth
@@ -36,6 +37,7 @@ class FocusTimerService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var timer: CountDownTimer? = null
     private var currentSession: FocusSession? = null
+    private var timeLeftInMillis = 0L
 
     private val _timerState = MutableStateFlow(TimerState.STOPPED)
     val timerState: StateFlow<TimerState> get() = _timerState
@@ -50,6 +52,7 @@ class FocusTimerService : Service() {
         const val CHANNEL_ID = "FocusTimerChannel"
         const val ACTION_START = "com.deepflowia.app.START"
         const val ACTION_PAUSE = "com.deepflowia.app.PAUSE"
+        const val ACTION_RESUME = "com.deepflowia.app.RESUME"
         const val ACTION_STOP = "com.deepflowia.app.STOP"
         const val EXTRA_DURATION_MINUTES = "duration_minutes"
         const val EXTRA_SESSION_TITLE = "session_title"
@@ -71,36 +74,40 @@ class FocusTimerService : Service() {
             ACTION_START -> {
                 val durationMinutes = intent.getLongExtra(EXTRA_DURATION_MINUTES, 25L)
                 val title = intent.getStringExtra(EXTRA_SESSION_TITLE)
-                startTimer(durationMinutes, title)
+                startTimer(durationMinutes * 60 * 1000, title, isNewSession = true)
             }
             ACTION_PAUSE -> pauseTimer()
+            ACTION_RESUME -> resumeTimer()
             ACTION_STOP -> stopTimer()
         }
         return START_NOT_STICKY
     }
 
-    private fun startTimer(durationMinutes: Long, title: String?) {
-        val durationMillis = durationMinutes * 60 * 1000
-        _timeInMillis.value = durationMillis
+    private fun startTimer(durationMillis: Long, title: String? = null, isNewSession: Boolean) {
+        timeLeftInMillis = durationMillis
+        _timeInMillis.value = timeLeftInMillis
         _timerState.value = TimerState.RUNNING
 
-        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
-        if (userId != null && currentSession == null) {
-            currentSession = FocusSession(
-                id = UUID.randomUUID().toString(),
-                userId = userId,
-                title = title,
-                duration = durationMinutes.toInt(),
-                startedAt = getCurrentTimestamp()
-            )
+        if (isNewSession) {
+            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+            if (userId != null) {
+                currentSession = FocusSession(
+                    id = UUID.randomUUID().toString(),
+                    userId = userId,
+                    title = title,
+                    duration = (durationMillis / (60 * 1000)).toInt(),
+                    startedAt = getCurrentTimestamp()
+                )
+            }
         }
 
-        startForeground(NOTIFICATION_ID, createNotification(durationMillis))
+        startForeground(NOTIFICATION_ID, createNotification().build())
 
-        timer = object : CountDownTimer(durationMillis, 1000) {
+        timer = object : CountDownTimer(timeLeftInMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                _timeInMillis.value = millisUntilFinished
-                updateNotification(millisUntilFinished)
+                timeLeftInMillis = millisUntilFinished
+                _timeInMillis.value = timeLeftInMillis
+                updateNotification()
             }
 
             override fun onFinish() {
@@ -112,6 +119,13 @@ class FocusTimerService : Service() {
     private fun pauseTimer() {
         timer?.cancel()
         _timerState.value = TimerState.PAUSED
+        updateNotification()
+    }
+
+    private fun resumeTimer() {
+        if (_timerState.value == TimerState.PAUSED) {
+            startTimer(timeLeftInMillis, currentSession?.title, isNewSession = false)
+        }
     }
 
     private fun stopTimer(completed: Boolean = false) {
@@ -153,17 +167,41 @@ class FocusTimerService : Service() {
         }
     }
 
-    private fun createNotification(timeLeft: Long) = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle("Session de Focus")
-        .setContentText("Temps restant : ${formatTime(timeLeft)}")
-        .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-        .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
-        .setOngoing(true)
-        .build()
+    private fun createNotification(): NotificationCompat.Builder {
+        val notificationIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
 
-    private fun updateNotification(timeLeft: Long) {
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Session de Focus")
+            .setContentText("Temps restant : ${formatTime(timeLeftInMillis)}")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+
+        when (_timerState.value) {
+            TimerState.RUNNING -> {
+                val pauseIntent = Intent(this, FocusTimerService::class.java).apply { action = ACTION_PAUSE }
+                val pausePendingIntent = PendingIntent.getService(this, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE)
+                builder.addAction(R.drawable.ic_launcher_foreground, "Pause", pausePendingIntent)
+            }
+            TimerState.PAUSED -> {
+                val resumeIntent = Intent(this, FocusTimerService::class.java).apply { action = ACTION_RESUME }
+                val resumePendingIntent = PendingIntent.getService(this, 2, resumeIntent, PendingIntent.FLAG_IMMUTABLE)
+                builder.addAction(R.drawable.ic_launcher_foreground, "Reprendre", resumePendingIntent)
+            }
+            else -> {}
+        }
+
+        val stopIntent = Intent(this, FocusTimerService::class.java).apply { action = ACTION_STOP }
+        val stopPendingIntent = PendingIntent.getService(this, 3, stopIntent, PendingIntent.FLAG_IMMUTABLE)
+        builder.addAction(R.drawable.ic_launcher_foreground, "Arrêter", stopPendingIntent)
+
+        return builder
+    }
+
+    private fun updateNotification() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, createNotification(timeLeft))
+        notificationManager.notify(NOTIFICATION_ID, createNotification().build())
     }
 
     private fun formatTime(millis: Long): String {

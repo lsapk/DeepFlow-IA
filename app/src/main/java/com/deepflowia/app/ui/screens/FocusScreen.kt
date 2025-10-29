@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -66,7 +68,7 @@ fun FocusScreen(navController: NavController) {
                 title = { Text("Mode Focus") },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 }
             )
@@ -89,7 +91,6 @@ fun FocusScreen(navController: NavController) {
                     onDurationSelected = { selectedDuration = it }
                 )
             } else {
-                // Affiche le titre de la session en cours si elle existe
                 Text(
                     text = sessionTitle.ifBlank { "Session de concentration" },
                     style = MaterialTheme.typography.headlineSmall,
@@ -110,6 +111,7 @@ fun FocusScreen(navController: NavController) {
                     context.startService(intent)
                 },
                 onPause = { context.startService(Intent(context, FocusTimerService::class.java).apply { action = FocusTimerService.ACTION_PAUSE }) },
+                onResume = { context.startService(Intent(context, FocusTimerService::class.java).apply { action = FocusTimerService.ACTION_RESUME }) },
                 onStop = { context.startService(Intent(context, FocusTimerService::class.java).apply { action = FocusTimerService.ACTION_STOP }) }
             )
         }
@@ -166,6 +168,7 @@ private fun TimerControls(
     timerState: FocusTimerService.TimerState,
     onStart: () -> Unit,
     onPause: () -> Unit,
+    onResume: () -> Unit,
     onStop: () -> Unit
 ) {
     Row(
@@ -187,7 +190,7 @@ private fun TimerControls(
                 }
             }
             FocusTimerService.TimerState.PAUSED -> {
-                Button(onClick = onStart, modifier = Modifier.height(48.dp)) {
+                Button(onClick = onResume, modifier = Modifier.height(48.dp)) {
                     Text("Reprendre", fontSize = 16.sp)
                 }
                 OutlinedButton(onClick = onStop, modifier = Modifier.height(48.dp)) {
