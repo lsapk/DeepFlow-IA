@@ -77,11 +77,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.google.android.material:material:1.11.0")
 
-    // Google AI Gemini SDK avec exclusion du conflit Ktor
-    implementation("com.google.ai.client.generativeai:generativeai:0.7.0") {
-        exclude(group = "io.ktor")
-    }
-
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.6")
 

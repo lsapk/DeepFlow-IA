@@ -1,0 +1,36 @@
+package com.deepflowia.app.models
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+// --- Request Models ---
+
+@Serializable
+data class GeminiRequest(
+    val contents: List<Content>
+)
+
+@Serializable
+data class Content(
+    val parts: List<Part>,
+    val role: String? = null // "user" ou "model"
+)
+
+@Serializable
+data class Part(
+    val text: String
+)
+
+// --- Response Models ---
+
+@Serializable
+data class GeminiResponse(
+    val candidates: List<Candidate>? = null
+)
+
+@Serializable
+data class Candidate(
+    val content: Content,
+    @SerialName("finishReason")
+    val finishReason: String? = null
+)

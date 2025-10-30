@@ -3,11 +3,9 @@ package com.deepflowia.app.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.deepflowia.app.BuildConfig
+import com.deepflowia.app.data.GeminiService
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.*
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.*
@@ -35,17 +33,6 @@ class AIViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(AIUiState())
     val uiState: StateFlow<AIUiState> = _uiState.asStateFlow()
 
-    private val config = generationConfig {
-        temperature = 0.7f
-    }
-
-    // Initialisation avec le SDK Google AI
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-1.5-flash",
-        apiKey = BuildConfig.GEMINI_API_KEY,
-        generationConfig = config
-    )
-
     fun setAIMode(mode: AIMode) {
         _uiState.update { it.copy(currentMode = mode) }
     }
@@ -58,8 +45,16 @@ class AIViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val prompt = buildPrompt(message, _uiState.value.currentMode)
-                val response = generativeModel.generateContent(prompt)
-                val aiResponse = ChatMessage(response.text ?: "Désolé, je n'ai pas de réponse.", false)
+
+                // Construire la requête manuellement
+                val request = GeminiRequest(contents = listOf(Content(parts = listOf(Part(text = prompt)))))
+
+                // Appeler le nouveau service
+                val response = GeminiService.generateContent(request)
+
+                // Extraire le texte de la réponse
+                val responseText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "Désolé, je n'ai pas de réponse."
+                val aiResponse = ChatMessage(responseText, false)
 
                 _uiState.update {
                     val currentConversation = it.conversation.dropLast(1)
@@ -78,8 +73,8 @@ class AIViewModel : ViewModel() {
     }
 
     private suspend fun buildPrompt(message: String, mode: AIMode): String {
+        // ... (logique de buildPrompt reste la même)
         val user = SupabaseManager.client.auth.currentUserOrNull() ?: return "Utilisateur non authentifié. L'utilisateur a dit : $message"
-
         return when (mode) {
             AIMode.DISCUSSION -> "Réponds comme un coach en productivité amical et encourageant. Voici la question de l'utilisateur : $message"
             AIMode.CREATION -> "Tu es un assistant expert en création de tâches. L'utilisateur veut créer quelque chose. Analyse sa demande et réponds UNIQUEMENT avec un JSON formaté pour créer l'objet (tâche, habitude, etc.). S'il manque des informations, demande-lui de clarifier. Voici sa demande : $message"
@@ -104,6 +99,7 @@ class AIViewModel : ViewModel() {
             val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
 
             try {
+                // ... (logique de génération du prompt reste la même)
                 val tasks = SupabaseManager.client.postgrest.from("tasks").select { filter { eq("user_id", user.id) } }.decodeList<Task>()
                 val habits = SupabaseManager.client.postgrest.from("habits").select { filter { eq("user_id", user.id) } }.decodeList<Habit>()
                 val goals = SupabaseManager.client.postgrest.from("goals").select { filter { eq("user_id", user.id) } }.decodeList<Goal>()
@@ -114,9 +110,11 @@ class AIViewModel : ViewModel() {
                     Données : Tâches=${Json.encodeToString(tasks)}, Habitudes=${Json.encodeToString(habits)}, Objectifs=${Json.encodeToString(goals)}
                 """.trimIndent()
 
-                val response = generativeModel.generateContent(prompt)
-                val analysisText = response.text ?: "SCORE: 0\nAnalyse indisponible."
+                val request = GeminiRequest(contents = listOf(Content(parts = listOf(Part(text = prompt)))))
+                val response = GeminiService.generateContent(request)
+                val analysisText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "SCORE: 0\nAnalyse indisponible."
 
+                // ... (logique de sauvegarde reste la même)
                 val existingAnalysis = SupabaseManager.client.postgrest
                     .from("ai_productivity_analysis")
                     .select { filter { eq("user_id", user.id) } }
@@ -142,6 +140,7 @@ class AIViewModel : ViewModel() {
     }
 
     fun fetchProductivityAnalysis() {
+        // ... (la logique reste la même)
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
