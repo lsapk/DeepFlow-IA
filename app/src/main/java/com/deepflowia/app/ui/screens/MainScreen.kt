@@ -10,7 +10,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
@@ -35,7 +34,7 @@ fun MainScreen(themeViewModel: ThemeViewModel) {
                 val currentDestination = navBackStackEntry?.destination
                 items.forEach { screen ->
                     NavigationBarItem(
-                        icon = { Icon(painter = painterResource(id = screen.icon), contentDescription = null) },
+                        icon = { Icon(imageVector = screen.icon, contentDescription = null) },
                         label = { Text(screen.title) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
