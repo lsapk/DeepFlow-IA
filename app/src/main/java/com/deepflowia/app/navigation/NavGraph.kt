@@ -28,13 +28,25 @@ fun NavGraph(
 ) {
     val authState by authViewModel.authState.collectAsState()
 
-    val startDestination = when (authState) {
-        is AuthState.SignedIn -> BottomNavItem.Home.route
-        is AuthState.SignedOut -> "login"
-        else -> "loading"
+    LaunchedEffect(authState) {
+        if(navController.currentDestination?.route == "loading") {
+            when (authState) {
+                is AuthState.SignedIn -> {
+                    navController.navigate(BottomNavItem.Home.route) {
+                        popUpTo("loading") { inclusive = true }
+                    }
+                }
+                is AuthState.SignedOut -> {
+                    navController.navigate("login") {
+                        popUpTo("loading") { inclusive = true }
+                    }
+                }
+                else -> Unit
+            }
+        }
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = "loading") {
         composable("loading") { LoadingScreen() }
         composable("login") {
             LoginScreen(
