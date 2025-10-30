@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.BuildConfig
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.*
-import com.google.firebase.vertexai.FirebaseVertexAI
-import com.google.firebase.vertexai.type.generationConfig
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.*
@@ -39,12 +39,12 @@ class AIViewModel : ViewModel() {
         temperature = 0.7f
     }
 
-    private val generativeModel = FirebaseVertexAI.getInstance()
-        .generativeModel(
-            modelName = "gemini-1.5-flash",
-            apiKey = BuildConfig.GEMINI_API_KEY,
-            generationConfig = config
-        )
+    // Initialisation avec le nouveau SDK Google AI
+    private val generativeModel = GenerativeModel(
+        modelName = "gemini-1.5-flash",
+        apiKey = BuildConfig.GEMINI_API_KEY,
+        generationConfig = config
+    )
 
     fun setAIMode(mode: AIMode) {
         _uiState.update { it.copy(currentMode = mode) }
@@ -57,9 +57,9 @@ class AIViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                // Construire le prompt en fonction du mode
                 val prompt = buildPrompt(message, _uiState.value.currentMode)
 
+                // L'appel à generateContent reste similaire
                 val response = generativeModel.generateContent(prompt)
                 val aiResponse = ChatMessage(response.text ?: "Désolé, je n'ai pas de réponse.", false)
 
