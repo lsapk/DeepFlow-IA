@@ -91,7 +91,7 @@ class AuthViewModel : ViewModel() {
     fun updateUserEmail(newEmail: String, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                SupabaseManager.client.auth.modifyUser {
+                SupabaseManager.client.auth.updateUser {
                     email = newEmail
                 }
                 _userEmail.value = newEmail
@@ -104,7 +104,7 @@ class AuthViewModel : ViewModel() {
     fun updatePassword(newPassword: String, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                SupabaseManager.client.auth.modifyUser {
+                SupabaseManager.client.auth.updateUser {
                     password = newPassword
                 }
             } catch (e: Exception) {

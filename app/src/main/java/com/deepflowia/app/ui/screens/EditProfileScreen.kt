@@ -24,6 +24,7 @@ fun EditProfileScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -71,32 +72,41 @@ fun EditProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
-                    errorMessage = null
-                    isLoading = true
                     if (password.isNotEmpty() && password != confirmPassword) {
                         errorMessage = "Les mots de passe ne correspondent pas."
-                        isLoading = false
                         return@Button
                     }
+
+                    isLoading = true
+                    errorMessage = null
 
                     val emailChanged = email.isNotBlank() && email != authViewModel.userEmail.value
                     val passwordChanged = password.isNotBlank()
 
-                    if (emailChanged) {
-                        authViewModel.updateUserEmail(email) {
-                            errorMessage = it
-                            isLoading = false
-                        }
-                    }
-                    if (passwordChanged) {
-                        authViewModel.updatePassword(password) {
-                            errorMessage = it
-                            isLoading = false
-                        }
+                    if (!emailChanged && !passwordChanged) {
+                        navController.navigateUp()
+                        return@Button
                     }
 
-                    if (errorMessage == null) {
-                        navController.navigateUp()
+                    scope.launch {
+                        var success = true
+                        if (emailChanged) {
+                            authViewModel.updateUserEmail(email) {
+                                errorMessage = it
+                                success = false
+                            }
+                        }
+                        if (passwordChanged && success) {
+                            authViewModel.updatePassword(password) {
+                                errorMessage = it
+                                success = false
+                            }
+                        }
+
+                        isLoading = false
+                        if (success) {
+                            navController.navigateUp()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
