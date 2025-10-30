@@ -62,7 +62,7 @@ fun ProfileScreen(
             ProfileHeader()
             Spacer(modifier = Modifier.height(24.dp))
             Column(Modifier.padding(horizontal = 16.dp)) {
-                AccountSection()
+                AccountSection(navController)
                 Spacer(modifier = Modifier.height(24.dp))
                 PreferencesSection(isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
                 Spacer(modifier = Modifier.height(24.dp))
@@ -81,7 +81,9 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileHeader() {
+fun ProfileHeader(authViewModel: AuthViewModel = viewModel()) {
+    val userEmail by authViewModel.userEmail.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -96,7 +98,7 @@ fun ProfileHeader() {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Utilisateur",
+            text = userEmail ?: "Utilisateur",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
         )
@@ -104,7 +106,7 @@ fun ProfileHeader() {
 }
 
 @Composable
-fun AccountSection() {
+fun AccountSection(navController: NavController) {
     Column {
         Text("COMPTE", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
@@ -113,9 +115,9 @@ fun AccountSection() {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             SettingsItem(
-                icon = Icons.Default.Lock,
-                title = "Changer le mot de passe",
-                onClick = { /* TODO */ }
+                icon = Icons.Default.Edit,
+                title = "Modifier le profil",
+                onClick = { navController.navigate("edit_profile") }
             )
         }
     }
@@ -179,6 +181,17 @@ fun SupportSection(navController: NavController) {
                 }
                 context.startActivity(intent)
             })
+            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+            SettingsItem(
+                icon = Icons.Default.Language,
+                title = "Notre Site Web",
+                onClick = {
+                    val url = "https://gemini-flow-pwa.onrender.com"
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    intent.data = Uri.parse(url)
+                    context.startActivity(intent)
+                }
+            )
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
             SettingsItem(icon = Icons.Filled.ReceiptLong, title = "Conditions d'utilisation", onClick = { navController.navigate("terms") })
         }

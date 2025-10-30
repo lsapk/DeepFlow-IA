@@ -25,35 +25,33 @@ fun NavGraph(
     authViewModel: AuthViewModel = viewModel(),
     themeViewModel: ThemeViewModel
 ) {
-    val authState = authViewModel.authState.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
 
-    LaunchedEffect(authState.value) {
-        when (authState.value) {
-            is AuthState.SignedIn -> {
-                navController.navigate(BottomNavItem.Home.route) {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                }
-            }
-            is AuthState.SignedOut -> {
-                navController.navigate("login") {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                }
-            }
-            else -> Unit
-        }
+    val startDestination = when (authState) {
+        is AuthState.SignedIn -> BottomNavItem.Home.route
+        is AuthState.SignedOut -> "login"
+        else -> "loading"
     }
 
-    NavHost(navController = navController, startDestination = "loading") {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("loading") { LoadingScreen() }
         composable("login") {
             LoginScreen(
-                onLoginSuccess = { /* La navigation est gérée par LaunchedEffect */ },
+                onLoginSuccess = {
+                    navController.navigate(BottomNavItem.Home.route) {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
                 onNavigateToSignup = { navController.navigate("signup") }
             )
         }
         composable("signup") {
             SignupScreen(
-                onSignupSuccess = { /* La navigation est gérée par LaunchedEffect */ },
+                onSignupSuccess = {
+                    navController.navigate(BottomNavItem.Home.route) {
+                        popUpTo("signup") { inclusive = true }
+                    }
+                },
                 onNavigateToLogin = { navController.navigate("login") }
             )
         }
@@ -107,6 +105,9 @@ fun NavGraph(
         composable("reflection_detail/{reflectionIdOrQuestion}") { backStackEntry ->
             val reflectionIdOrQuestion = backStackEntry.arguments?.getString("reflectionIdOrQuestion")
             ReflectionDetailScreen(navController = navController, reflectionIdOrQuestion = reflectionIdOrQuestion)
+        }
+        composable("edit_profile") {
+            EditProfileScreen(navController = navController)
         }
     }
 }

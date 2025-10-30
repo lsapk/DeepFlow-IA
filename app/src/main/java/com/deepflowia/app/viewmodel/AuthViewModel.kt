@@ -16,13 +16,22 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
     val authState: StateFlow<AuthState> = _authState
 
+    private val _userEmail = MutableStateFlow<String?>(null)
+    val userEmail: StateFlow<String?> = _userEmail
+
     init {
         viewModelScope.launch {
             SupabaseManager.client.auth.sessionStatus.collect { status ->
                 Log.d("AuthViewModel", "Statut de la session Supabase : $status")
                 _authState.value = when (status) {
-                    is SessionStatus.Authenticated -> AuthState.SignedIn
-                    is SessionStatus.NotAuthenticated -> AuthState.SignedOut
+                    is SessionStatus.Authenticated -> {
+                        _userEmail.value = status.session.user?.email
+                        AuthState.SignedIn
+                    }
+                    is SessionStatus.NotAuthenticated -> {
+                        _userEmail.value = null
+                        AuthState.SignedOut
+                    }
                     else -> AuthState.Loading
                 }
             }
@@ -75,6 +84,31 @@ class AuthViewModel : ViewModel() {
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Une erreur est survenue lors de la déconnexion")
                 Log.e("AuthViewModel", "Échec de la déconnexion.", e)
+            }
+        }
+    }
+
+    fun updateUserEmail(newEmail: String, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                SupabaseManager.client.auth.modifyUser {
+                    email = newEmail
+                }
+                _userEmail.value = newEmail
+            } catch (e: Exception) {
+                onError(e.message ?: "Une erreur est survenue")
+            }
+        }
+    }
+
+    fun updatePassword(newPassword: String, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                SupabaseManager.client.auth.modifyUser {
+                    password = newPassword
+                }
+            } catch (e: Exception) {
+                onError(e.message ?: "Une erreur est survenue")
             }
         }
     }

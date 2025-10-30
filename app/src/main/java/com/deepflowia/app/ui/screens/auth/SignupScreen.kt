@@ -1,13 +1,9 @@
 package com.deepflowia.app.ui.screens.auth
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -25,7 +21,14 @@ fun SignupScreen(
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     val confirmPassword = remember { mutableStateOf("") }
-    val authState = authViewModel.authState.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
+    var passwordError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.SignedIn) {
+            onSignupSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -43,7 +46,10 @@ fun SignupScreen(
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = password.value,
-            onValueChange = { password.value = it },
+            onValueChange = {
+                password.value = it
+                passwordError = false
+            },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
@@ -51,23 +57,39 @@ fun SignupScreen(
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = confirmPassword.value,
-            onValueChange = { confirmPassword.value = it },
+            onValueChange = {
+                confirmPassword.value = it
+                passwordError = false
+            },
             label = { Text("Confirm Password") },
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = passwordError
         )
+        if (passwordError) {
+            Text(
+                text = "Passwords do not match",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
                 if (password.value == confirmPassword.value) {
                     authViewModel.signUp(email.value, password.value)
                 } else {
-                    // Show error message
+                    passwordError = true
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = authState != AuthState.Loading
         ) {
-            Text("Sign Up")
+            if (authState == AuthState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                Text("Sign Up")
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Button(
@@ -76,15 +98,13 @@ fun SignupScreen(
         ) {
             Text("Already have an account? Sign in")
         }
-    }
 
-    when (authState.value) {
-        is AuthState.SignedIn -> onSignupSuccess()
-        is AuthState.Error -> {
-            // Show error message
-        }
-        else -> {
-            // Show loading or signed out
+        if (authState is AuthState.Error) {
+            Text(
+                text = (authState as AuthState.Error).message,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
