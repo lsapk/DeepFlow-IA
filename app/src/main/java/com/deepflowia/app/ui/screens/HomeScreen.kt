@@ -37,6 +37,7 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToFocus: () -> Unit,
     onNavigateToReflection: () -> Unit,
+    onNavigateToProductivityAnalysis: () -> Unit,
 ) {
     val features = listOf(
         Feature("Tâches", Icons.Filled.List, Color(0xFF6A1B9A), onNavigateToTasks),
@@ -44,7 +45,8 @@ fun HomeScreen(
         Feature("Objectifs", Icons.Default.CheckCircleOutline, Color(0xFF2E7D32), onNavigateToGoals),
         Feature("Journal", Icons.Default.Book, Color(0xFFD84315), onNavigateToJournal),
         Feature("Focus", Icons.Default.CenterFocusStrong, Color(0xFFC62828), onNavigateToFocus),
-        Feature("Réflexion", Icons.Default.SelfImprovement, Color(0xFF283593), onNavigateToReflection)
+        Feature("Réflexion", Icons.Default.SelfImprovement, Color(0xFF283593), onNavigateToReflection),
+        Feature("Analyse IA", Icons.Default.Analytics, Color(0xFF00695C), onNavigateToProductivityAnalysis)
     )
 
     Scaffold(
@@ -131,6 +133,13 @@ fun FeaturesGrid(features: List<Feature>, modifier: Modifier = Modifier) {
         ) {
             FeatureCard(feature = features[4], modifier = Modifier.weight(1f))
             FeatureCard(feature = features[5], modifier = Modifier.weight(1f))
+        }
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            FeatureCard(feature = features[6], modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(1f)) // Pour garder l'alignement
         }
     }
 }

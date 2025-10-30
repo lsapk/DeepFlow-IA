@@ -76,7 +76,8 @@ fun NavGraph(
                 onNavigateToJournal = { navController.navigate("journal") },
                 onNavigateToProfile = { navController.navigate(BottomNavItem.Profile.route) },
                 onNavigateToFocus = { navController.navigate("focus") },
-                onNavigateToReflection = { navController.navigate("reflection") }
+                onNavigateToReflection = { navController.navigate("reflection") },
+                onNavigateToProductivityAnalysis = { navController.navigate("productivity_analysis") }
             )
         }
         composable("tasks") { TasksScreen(navController = navController) }
@@ -121,6 +122,9 @@ fun NavGraph(
         }
         composable("edit_profile") {
             EditProfileScreen(navController = navController)
+        }
+        composable("productivity_analysis") {
+            ProductivityAnalysisScreen()
         }
     }
 }
