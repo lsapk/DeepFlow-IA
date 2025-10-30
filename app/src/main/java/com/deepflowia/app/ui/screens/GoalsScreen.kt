@@ -42,6 +42,11 @@ fun GoalsScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
+                actions = {
+                    TextButton(onClick = { goalViewModel.setShowCompleted(!showCompleted) }) {
+                        Text(if (showCompleted) "Voir en cours" else "Voir terminés")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -58,45 +63,23 @@ fun GoalsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
+                .padding(innerPadding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = !showCompleted,
-                    onClick = { goalViewModel.setShowCompleted(false) },
-                    label = { Text("En cours") }
+            items(goals, key = { it.id!! }) { goal ->
+                GoalItem(
+                    goal = goal,
+                    onGoalClicked = {
+                        navController.navigate("goal_detail/${goal.id}")
+                    },
+                    onToggleCompletion = { goalViewModel.toggleCompletion(goal) },
+                    onUpdateProgress = { change -> goalViewModel.updateGoalProgress(goal, change) },
+                    onDelete = { goalViewModel.deleteGoal(goal) }
                 )
-                FilterChip(
-                    selected = showCompleted,
-                    onClick = { goalViewModel.setShowCompleted(true) },
-                    label = { Text("Terminés") }
-                )
-            }
-
-            LazyColumn(
-                contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(goals, key = { it.id!! }) { goal ->
-                    GoalItem(
-                        goal = goal,
-                        onGoalClicked = {
-                            navController.navigate("goal_detail/${goal.id}")
-                        },
-                        onToggleCompletion = { goalViewModel.toggleCompletion(goal) },
-                        onUpdateProgress = { change -> goalViewModel.updateGoalProgress(goal, change) },
-                        onDelete = { goalViewModel.deleteGoal(goal) }
-                    )
-                }
             }
         }
     }
