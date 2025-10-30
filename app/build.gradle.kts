@@ -5,7 +5,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization") version "2.2.20"
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.gms.google-services")
 }
 
 // Lire les propriétés locales
@@ -60,6 +59,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/versions/9/previous-compilation-data.bin"
         }
     }
 }
@@ -77,9 +77,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.google.android.material:material:1.11.0")
 
-    // Firebase Gemini
-    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
-    implementation("com.google.firebase:firebase-vertexai")
+    // Google AI Gemini SDK avec exclusion du conflit Ktor
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0") {
+        exclude(group = "io.ktor")
+    }
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.6")

@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.BuildConfig
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.*
-import com.google.firebase.vertexai.FirebaseVertexAI
-import com.google.firebase.vertexai.type.generationConfig
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.generationConfig
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.*
@@ -39,12 +39,12 @@ class AIViewModel : ViewModel() {
         temperature = 0.7f
     }
 
-    private val generativeModel = FirebaseVertexAI.getInstance()
-        .generativeModel(
-            modelName = "gemini-1.5-flash",
-            apiKey = BuildConfig.GEMINI_API_KEY,
-            generationConfig = config
-        )
+    // Initialisation avec le SDK Google AI
+    private val generativeModel = GenerativeModel(
+        modelName = "gemini-1.5-flash",
+        apiKey = BuildConfig.GEMINI_API_KEY,
+        generationConfig = config
+    )
 
     fun setAIMode(mode: AIMode) {
         _uiState.update { it.copy(currentMode = mode) }
@@ -104,7 +104,6 @@ class AIViewModel : ViewModel() {
             val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
 
             try {
-                // ... (génération du prompt)
                 val tasks = SupabaseManager.client.postgrest.from("tasks").select { filter { eq("user_id", user.id) } }.decodeList<Task>()
                 val habits = SupabaseManager.client.postgrest.from("habits").select { filter { eq("user_id", user.id) } }.decodeList<Habit>()
                 val goals = SupabaseManager.client.postgrest.from("goals").select { filter { eq("user_id", user.id) } }.decodeList<Goal>()
@@ -118,20 +117,17 @@ class AIViewModel : ViewModel() {
                 val response = generativeModel.generateContent(prompt)
                 val analysisText = response.text ?: "SCORE: 0\nAnalyse indisponible."
 
-                // Logique de sauvegarde corrigée
                 val existingAnalysis = SupabaseManager.client.postgrest
                     .from("ai_productivity_analysis")
                     .select { filter { eq("user_id", user.id) } }
                     .decodeSingleOrNull<AIProductivityAnalysis>()
 
                 if (existingAnalysis != null) {
-                    // Update
                     SupabaseManager.client.postgrest.from("ai_productivity_analysis")
                         .update({ set("analysis_data", analysisText) }) {
                             filter { eq("id", existingAnalysis.id!!) }
                         }
                 } else {
-                    // Insert
                     val newAnalysis = AIProductivityAnalysis(userId = user.id, analysisData = analysisText)
                     SupabaseManager.client.postgrest.from("ai_productivity_analysis").insert(newAnalysis)
                 }
