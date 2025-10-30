@@ -120,7 +120,7 @@ class AIViewModel : ViewModel() {
                 val analysisText = response.text ?: "SCORE: 0\nAnalyse indisponible."
 
                 val newAnalysis = AIProductivityAnalysis(userId = user.id, analysisData = analysisText)
-                SupabaseManager.client.postgrest.from("ai_productivity_analysis").upsert(newAnalysis) { onConflict("user_id") }
+                SupabaseManager.client.postgrest.from("ai_productivity_analysis").upsert(newAnalysis, onConflict = "user_id")
                 fetchProductivityAnalysis()
 
             } catch (e: Exception) {
