@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.BuildConfig
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.*
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.generationConfig
+import com.google.firebase.vertexai.FirebaseVertexAI
+import com.google.firebase.vertexai.type.generationConfig
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.*
@@ -39,11 +39,12 @@ class AIViewModel : ViewModel() {
         temperature = 0.7f
     }
 
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-1.5-flash",
-        apiKey = BuildConfig.GEMINI_API_KEY,
-        generationConfig = config
-    )
+    private val generativeModel = FirebaseVertexAI.getInstance()
+        .generativeModel(
+            modelName = "gemini-1.5-flash",
+            apiKey = BuildConfig.GEMINI_API_KEY,
+            generationConfig = config
+        )
 
     fun setAIMode(mode: AIMode) {
         _uiState.update { it.copy(currentMode = mode) }
