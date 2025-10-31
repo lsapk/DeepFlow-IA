@@ -25,12 +25,26 @@ data class Part(
 
 @Serializable
 data class GeminiResponse(
-    val candidates: List<Candidate>? = null
+    val candidates: List<Candidate>? = null,
+    val promptFeedback: PromptFeedback? = null
 )
 
 @Serializable
 data class Candidate(
     val content: Content,
     @SerialName("finishReason")
-    val finishReason: String? = null
+    val finishReason: String? = null,
+    val safetyRatings: List<SafetyRating>? = null
+)
+
+@Serializable
+data class PromptFeedback(
+    val blockReason: String? = null,
+    val safetyRatings: List<SafetyRating>? = null
+)
+
+@Serializable
+data class SafetyRating(
+    val category: String, // HARM_CATEGORY_...
+    val probability: String // HARM_PROBABILITY_...
 )

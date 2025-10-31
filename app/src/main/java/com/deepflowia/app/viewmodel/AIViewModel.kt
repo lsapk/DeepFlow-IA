@@ -46,7 +46,6 @@ class AIViewModel : ViewModel() {
             try {
                 val prompt = buildPrompt(message, _uiState.value.currentMode)
 
-                // Correction de la structure de la requête
                 val request = GeminiRequest(
                     contents = listOf(
                         Content(
@@ -56,7 +55,24 @@ class AIViewModel : ViewModel() {
                     )
                 )
 
+                Log.d("AIViewModel", "Requête Gemini : ${Json.encodeToString(request)}")
+
                 val response = GeminiService.generateContent(request)
+                Log.d("AIViewModel", "Réponse de Gemini : ${Json.encodeToString(response)}")
+
+
+                if (response.promptFeedback?.blockReason != null) {
+                    val blockReason = response.promptFeedback.blockReason
+                    val safetyRatings = response.promptFeedback.safetyRatings?.joinToString { "${it.category}: ${it.probability}" } ?: "N/A"
+                    val errorMessage = "Votre demande a été bloquée pour la raison suivante : $blockReason. Classifications de sécurité : $safetyRatings"
+                    val aiErrorResponse = ChatMessage(errorMessage, false)
+                    _uiState.update {
+                        val currentConversation = it.conversation.dropLast(1)
+                        it.copy(conversation = currentConversation + aiErrorResponse, isLoading = false, errorMessage = errorMessage)
+                    }
+                    return@launch
+                }
+
 
                 val responseText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "Désolé, je n'ai pas de réponse."
                 val aiResponse = ChatMessage(responseText, false)
@@ -78,7 +94,6 @@ class AIViewModel : ViewModel() {
     }
 
     private suspend fun buildPrompt(message: String, mode: AIMode): String {
-        // ... (logique de buildPrompt reste la même)
         val user = SupabaseManager.client.auth.currentUserOrNull() ?: return "Utilisateur non authentifié. L'utilisateur a dit : $message"
         return when (mode) {
             AIMode.DISCUSSION -> "Réponds comme un coach en productivité amical et encourageant. Voici la question de l'utilisateur : $message"
@@ -104,7 +119,6 @@ class AIViewModel : ViewModel() {
             val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
 
             try {
-                // ... (logique de génération du prompt reste la même)
                 val tasks = SupabaseManager.client.postgrest.from("tasks").select { filter { eq("user_id", user.id) } }.decodeList<Task>()
                 val habits = SupabaseManager.client.postgrest.from("habits").select { filter { eq("user_id", user.id) } }.decodeList<Habit>()
                 val goals = SupabaseManager.client.postgrest.from("goals").select { filter { eq("user_id", user.id) } }.decodeList<Goal>()
@@ -123,10 +137,23 @@ class AIViewModel : ViewModel() {
                         )
                     )
                 )
+
+                Log.d("AIViewModel", "Requête d'analyse Gemini : ${Json.encodeToString(request)}")
                 val response = GeminiService.generateContent(request)
+                Log.d("AIViewModel", "Réponse d'analyse de Gemini : ${Json.encodeToString(response)}")
+
+
+                if (response.promptFeedback?.blockReason != null) {
+                    val blockReason = response.promptFeedback.blockReason
+                    val safetyRatings = response.promptFeedback.safetyRatings?.joinToString { "${it.category}: ${it.probability}" } ?: "N/A"
+                    val errorMessage = "L'analyse de productivité a été bloquée : $blockReason. Détails : $safetyRatings"
+                    _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+                    return@launch
+                }
+
+
                 val analysisText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "SCORE: 0\nAnalyse indisponible."
 
-                // ... (logique de sauvegarde reste la même)
                 val existingAnalysis = SupabaseManager.client.postgrest
                     .from("ai_productivity_analysis")
                     .select { filter { eq("user_id", user.id) } }
@@ -152,7 +179,6 @@ class AIViewModel : ViewModel() {
     }
 
     fun fetchProductivityAnalysis() {
-        // ... (la logique reste la même)
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
