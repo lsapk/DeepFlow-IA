@@ -46,13 +46,18 @@ class AIViewModel : ViewModel() {
             try {
                 val prompt = buildPrompt(message, _uiState.value.currentMode)
 
-                // Construire la requête manuellement
-                val request = GeminiRequest(contents = listOf(Content(parts = listOf(Part(text = prompt)))))
+                // Correction de la structure de la requête
+                val request = GeminiRequest(
+                    contents = listOf(
+                        Content(
+                            parts = listOf(Part(text = prompt)),
+                            role = "user"
+                        )
+                    )
+                )
 
-                // Appeler le nouveau service
                 val response = GeminiService.generateContent(request)
 
-                // Extraire le texte de la réponse
                 val responseText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "Désolé, je n'ai pas de réponse."
                 val aiResponse = ChatMessage(responseText, false)
 
@@ -110,7 +115,14 @@ class AIViewModel : ViewModel() {
                     Données : Tâches=${Json.encodeToString(tasks)}, Habitudes=${Json.encodeToString(habits)}, Objectifs=${Json.encodeToString(goals)}
                 """.trimIndent()
 
-                val request = GeminiRequest(contents = listOf(Content(parts = listOf(Part(text = prompt)))))
+                val request = GeminiRequest(
+                    contents = listOf(
+                        Content(
+                            parts = listOf(Part(text = prompt)),
+                            role = "user"
+                        )
+                    )
+                )
                 val response = GeminiService.generateContent(request)
                 val analysisText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "SCORE: 0\nAnalyse indisponible."
 

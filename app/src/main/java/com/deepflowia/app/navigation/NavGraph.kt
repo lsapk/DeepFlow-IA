@@ -99,7 +99,9 @@ fun NavGraph(
             val journalId = backStackEntry.arguments?.getString("journalId")
             JournalDetailScreen(journalId = journalId, navController = navController)
         }
-        composable(BottomNavItem.AI.route) { AIScreen() }
+        composable(BottomNavItem.AI.route) { AIScreen(navController = navController) }
+        composable("ai_chat") { AIChatScreen() }
+        composable("productivity_analysis") { ProductivityAnalysisScreen() }
         composable(BottomNavItem.Profile.route) {
             ProfileScreen(
                 navController = navController,
