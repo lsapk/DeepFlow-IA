@@ -1,6 +1,7 @@
 package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -67,7 +69,11 @@ private fun FeatureCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null, // Désactive l'effet d'ondulation pour corriger le crash
+                onClick = onClick
+            ),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
