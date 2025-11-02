@@ -12,12 +12,12 @@ import kotlinx.serialization.json.Json
 
 object GeminiService {
 
-    private const val BASE_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+    private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun generateContent(request: GeminiRequest): GeminiResponse {
+    suspend fun generateContent(request: GeminiRequest, modelName: String): GeminiResponse {
         val client = SupabaseManager.client.httpClient
-        val urlWithKey = "$BASE_URL?key=${BuildConfig.GEMINI_API_KEY}"
+        val urlWithKey = "$BASE_URL/$modelName:generateContent?key=${BuildConfig.GEMINI_API_KEY}"
 
         return try {
             val response: HttpResponse = client.post(urlWithKey) {

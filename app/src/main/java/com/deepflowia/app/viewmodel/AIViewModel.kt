@@ -57,7 +57,11 @@ class AIViewModel : ViewModel() {
 
                 Log.d("AIViewModel", "Requête Gemini : ${Json.encodeToString(request)}")
 
-                val response = GeminiService.generateContent(request)
+                val modelName = when (_uiState.value.currentMode) {
+                    AIMode.CREATION -> "gemini-2.0-flash-exp-latest"
+                    AIMode.DISCUSSION, AIMode.ANALYSE -> "gemini-1.5-flash-latest"
+                }
+                val response = GeminiService.generateContent(request, modelName)
                 Log.d("AIViewModel", "Réponse de Gemini : ${Json.encodeToString(response)}")
 
 
@@ -153,7 +157,7 @@ class AIViewModel : ViewModel() {
                 )
 
                 Log.d("AIViewModel", "Requête d'analyse Gemini : ${Json.encodeToString(request)}")
-                val response = GeminiService.generateContent(request)
+                val response = GeminiService.generateContent(request, "gemini-1.5-flash-latest")
                 Log.d("AIViewModel", "Réponse d'analyse de Gemini : ${Json.encodeToString(response)}")
 
 
