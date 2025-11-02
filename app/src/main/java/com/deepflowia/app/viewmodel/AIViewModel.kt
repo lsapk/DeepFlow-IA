@@ -61,6 +61,20 @@ class AIViewModel : ViewModel() {
                 Log.d("AIViewModel", "Réponse de Gemini : ${Json.encodeToString(response)}")
 
 
+                if (response.error != null) {
+                    val errorMessage = "Erreur de l'API Gemini : ${response.error.message}"
+                    val aiErrorResponse = ChatMessage(errorMessage, isUser = false)
+                    _uiState.update {
+                        val currentConversation = it.conversation.dropLast(1) // Retire le message de chargement
+                        it.copy(
+                            conversation = currentConversation + aiErrorResponse,
+                            isLoading = false,
+                            errorMessage = errorMessage
+                        )
+                    }
+                    return@launch
+                }
+
                 if (response.promptFeedback?.blockReason != null) {
                     val blockReason = response.promptFeedback.blockReason
                     val safetyRatings = response.promptFeedback.safetyRatings?.joinToString { "${it.category}: ${it.probability}" } ?: "N/A"
@@ -142,6 +156,12 @@ class AIViewModel : ViewModel() {
                 val response = GeminiService.generateContent(request)
                 Log.d("AIViewModel", "Réponse d'analyse de Gemini : ${Json.encodeToString(response)}")
 
+
+                if (response.error != null) {
+                    val errorMessage = "Erreur de l'API Gemini lors de l'analyse : ${response.error.message}"
+                    _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+                    return@launch
+                }
 
                 if (response.promptFeedback?.blockReason != null) {
                     val blockReason = response.promptFeedback.blockReason

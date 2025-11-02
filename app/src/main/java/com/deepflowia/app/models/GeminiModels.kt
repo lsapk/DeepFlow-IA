@@ -26,7 +26,8 @@ data class Part(
 @Serializable
 data class GeminiResponse(
     val candidates: List<Candidate>? = null,
-    val promptFeedback: PromptFeedback? = null
+    val promptFeedback: PromptFeedback? = null,
+    val error: GeminiError? = null
 )
 
 @Serializable
@@ -47,4 +48,13 @@ data class PromptFeedback(
 data class SafetyRating(
     val category: String, // HARM_CATEGORY_...
     val probability: String // HARM_PROBABILITY_...
+)
+
+// --- Error Models ---
+
+@Serializable
+data class GeminiError(
+    val code: Int,
+    val message: String,
+    val status: String
 )

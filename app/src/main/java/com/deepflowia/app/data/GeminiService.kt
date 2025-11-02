@@ -13,25 +13,32 @@ import kotlinx.serialization.json.Json
 object GeminiService {
 
     private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun generateContent(request: GeminiRequest): GeminiResponse {
         val client = SupabaseManager.client.httpClient
-
-        val response: HttpResponse = client.post(BASE_URL) {
-            contentType(ContentType.Application.Json)
-            header("x-goog-api-key", BuildConfig.GEMINI_API_KEY)
-            setBody(request)
-        }
-
-        val responseBodyString = response.bodyAsText()
-        Log.d("GeminiService", "Réponse brute de l'API Gemini : $responseBodyString")
+        val urlWithKey = "$BASE_URL?key=${BuildConfig.GEMINI_API_KEY}"
 
         return try {
-            Json.decodeFromString<GeminiResponse>(responseBodyString)
+            val response: HttpResponse = client.post(urlWithKey) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+
+            val responseBodyString = response.bodyAsText()
+            Log.d("GeminiService", "Réponse brute de l'API Gemini : $responseBodyString")
+
+            json.decodeFromString<GeminiResponse>(responseBodyString)
+
         } catch (e: Exception) {
-            Log.e("GeminiService", "Erreur de désérialisation de la réponse Gemini", e)
-            // Retourne une réponse vide ou avec un message d'erreur si la désérialisation échoue
-            GeminiResponse(candidates = null, promptFeedback = null)
+            Log.e("GeminiService", "Erreur de désérialisation ou de réseau Gemini", e)
+            GeminiResponse(
+                error = com.deepflowia.app.models.GeminiError(
+                    code = 500,
+                    message = "Erreur de communication avec l'API Gemini: ${e.message}",
+                    status = "INTERNAL_CLIENT_ERROR"
+                )
+            )
         }
     }
 }
