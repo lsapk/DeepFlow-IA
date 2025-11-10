@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
 
 object GeminiService {
 
-    private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+    private const val BASE_URL = "https://generativelanguage.googleapis.com/v1/models"
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun generateContent(request: GeminiRequest, modelName: String): GeminiResponse {
