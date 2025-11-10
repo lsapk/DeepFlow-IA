@@ -58,3 +58,8 @@ data class GeminiError(
     val message: String,
     val status: String
 )
+
+sealed class GeminiResult {
+    data class Success(val responseText: String) : GeminiResult()
+    data class Error(val errorMessage: String, val blockReason: String? = null, val safetyRatings: String? = null) : GeminiResult()
+}

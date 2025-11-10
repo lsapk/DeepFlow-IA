@@ -1,44 +1,46 @@
 package com.deepflowia.app.data
 
 import android.util.Log
-import com.deepflowia.app.BuildConfig
-import com.deepflowia.app.models.GeminiRequest
-import com.deepflowia.app.models.GeminiResponse
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import kotlinx.serialization.json.Json
+import com.deepflowia.app.models.GeminiResult
+import com.google.firebase.ai.GenerativeModel
+import com.google.firebase.ai.GenerativeBackend
+import com.google.firebase.ai.ktx.ai
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object GeminiService {
 
-    private const val BASE_URL = "https://generativelanguage.googleapis.com/v1/models"
-    private val json = Json { ignoreUnknownKeys = true }
+    private fun getModel(modelName: String): GenerativeModel {
+        return Firebase.ai(backend = GenerativeBackend.googleAI())
+            .generativeModel(modelName)
+    }
 
-    suspend fun generateContent(request: GeminiRequest, modelName: String): GeminiResponse {
-        val client = SupabaseManager.client.httpClient
-        val urlWithKey = "$BASE_URL/$modelName:generateContent?key=${BuildConfig.GEMINI_API_KEY}"
+    suspend fun generateContent(prompt: String, modelName: String): GeminiResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                val model = getModel(modelName)
+                val response = model.generateContent(prompt)
 
-        return try {
-            val response: HttpResponse = client.post(urlWithKey) {
-                contentType(ContentType.Application.Json)
-                setBody(request)
+                if (response.promptFeedback?.blockReason != null) {
+                    val blockReason = response.promptFeedback?.blockReason.toString()
+                    val safetyRatings = response.promptFeedback?.safetyRatings.toString()
+                    val errorMessage = "Votre demande a été bloquée pour la raison suivante : $blockReason."
+                    Log.w("GeminiService", "$errorMessage Détails de sécurité : $safetyRatings")
+                    GeminiResult.Error(errorMessage, blockReason, safetyRatings)
+                } else {
+                    val responseText = response.text ?: ""
+                    if (responseText.isNotEmpty()) {
+                        GeminiResult.Success(responseText)
+                    } else {
+                        Log.w("GeminiService", "Réponse de Gemini vide.")
+                        GeminiResult.Error("La réponse du modèle était vide.")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("GeminiService", "Erreur lors de la génération de contenu Gemini", e)
+                GeminiResult.Error("Erreur de communication avec l'API Gemini: ${e.message}")
             }
-
-            val responseBodyString = response.bodyAsText()
-            Log.d("GeminiService", "Réponse brute de l'API Gemini : $responseBodyString")
-
-            json.decodeFromString<GeminiResponse>(responseBodyString)
-
-        } catch (e: Exception) {
-            Log.e("GeminiService", "Erreur de désérialisation ou de réseau Gemini", e)
-            GeminiResponse(
-                error = com.deepflowia.app.models.GeminiError(
-                    code = 500,
-                    message = "Erreur de communication avec l'API Gemini: ${e.message}",
-                    status = "INTERNAL_CLIENT_ERROR"
-                )
-            )
         }
     }
 }

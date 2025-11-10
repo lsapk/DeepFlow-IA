@@ -43,69 +43,34 @@ class AIViewModel : ViewModel() {
         _uiState.update { it.copy(conversation = it.conversation + newUserMessage + loadingMessage, isLoading = true) }
 
         viewModelScope.launch {
-            try {
-                val prompt = buildPrompt(message, _uiState.value.currentMode)
+            val prompt = buildPrompt(message, _uiState.value.currentMode)
+            val modelName = when (_uiState.value.currentMode) {
+                AIMode.CREATION -> "gemini-1.5-pro"
+                AIMode.DISCUSSION, AIMode.ANALYSE -> "gemini-1.5-flash"
+            }
 
-                val request = GeminiRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(Part(text = prompt)),
-                            role = "user"
+            Log.d("AIViewModel", "Envoi de la requête à Gemini avec le modèle : $modelName")
+            val result = GeminiService.generateContent(prompt, modelName)
+
+            _uiState.update { currentState ->
+                val currentConversation = currentState.conversation.dropLast(1) // Retire le message de chargement
+                when (result) {
+                    is GeminiResult.Success -> {
+                        val aiResponse = ChatMessage(result.responseText, false)
+                        currentState.copy(
+                            conversation = currentConversation + aiResponse,
+                            isLoading = false
                         )
-                    )
-                )
-
-                Log.d("AIViewModel", "Requête Gemini : ${Json.encodeToString(request)}")
-
-                val modelName = when (_uiState.value.currentMode) {
-                    AIMode.CREATION -> "gemini-1.5-pro"
-                    AIMode.DISCUSSION, AIMode.ANALYSE -> "gemini-1.5-flash"
-                }
-                val response = GeminiService.generateContent(request, modelName)
-                Log.d("AIViewModel", "Réponse de Gemini : ${Json.encodeToString(response)}")
-
-
-                if (response.error != null) {
-                    val errorMessage = "Erreur de l'API Gemini : ${response.error.message}"
-                    val aiErrorResponse = ChatMessage(errorMessage, isUser = false)
-                    _uiState.update {
-                        val currentConversation = it.conversation.dropLast(1) // Retire le message de chargement
-                        it.copy(
+                    }
+                    is GeminiResult.Error -> {
+                        val errorMessage = "Erreur Gemini : ${result.errorMessage}"
+                        val aiErrorResponse = ChatMessage(errorMessage, false)
+                        currentState.copy(
                             conversation = currentConversation + aiErrorResponse,
                             isLoading = false,
                             errorMessage = errorMessage
                         )
                     }
-                    return@launch
-                }
-
-                if (response.promptFeedback?.blockReason != null) {
-                    val blockReason = response.promptFeedback.blockReason
-                    val safetyRatings = response.promptFeedback.safetyRatings?.joinToString { "${it.category}: ${it.probability}" } ?: "N/A"
-                    val errorMessage = "Votre demande a été bloquée pour la raison suivante : $blockReason. Classifications de sécurité : $safetyRatings"
-                    val aiErrorResponse = ChatMessage(errorMessage, false)
-                    _uiState.update {
-                        val currentConversation = it.conversation.dropLast(1)
-                        it.copy(conversation = currentConversation + aiErrorResponse, isLoading = false, errorMessage = errorMessage)
-                    }
-                    return@launch
-                }
-
-
-                val responseText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "Désolé, je n'ai pas de réponse."
-                val aiResponse = ChatMessage(responseText, false)
-
-                _uiState.update {
-                    val currentConversation = it.conversation.dropLast(1)
-                    it.copy(conversation = currentConversation + aiResponse, isLoading = false)
-                }
-
-            } catch (e: Exception) {
-                Log.e("AIViewModel", "Erreur lors de l'appel à l'API Gemini", e)
-                val errorMessage = ChatMessage("Erreur: Impossible de contacter l'IA.", false)
-                _uiState.update {
-                    val currentConversation = it.conversation.dropLast(1)
-                    it.copy(conversation = currentConversation + errorMessage, errorMessage = "Erreur: ${e.message}", isLoading = false)
                 }
             }
         }
@@ -147,53 +112,33 @@ class AIViewModel : ViewModel() {
                     Données : Tâches=${Json.encodeToString(tasks)}, Habitudes=${Json.encodeToString(habits)}, Objectifs=${Json.encodeToString(goals)}
                 """.trimIndent()
 
-                val request = GeminiRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(Part(text = prompt)),
-                            role = "user"
-                        )
-                    )
-                )
+                Log.d("AIViewModel", "Envoi de la requête d'analyse à Gemini.")
+                val result = GeminiService.generateContent(prompt, "gemini-1.5-flash")
 
-                Log.d("AIViewModel", "Requête d'analyse Gemini : ${Json.encodeToString(request)}")
-                val response = GeminiService.generateContent(request, "gemini-1.5-flash")
-                Log.d("AIViewModel", "Réponse d'analyse de Gemini : ${Json.encodeToString(response)}")
+                when (result) {
+                    is GeminiResult.Success -> {
+                        val analysisText = result.responseText
+                        val existingAnalysis = SupabaseManager.client.postgrest
+                            .from("ai_productivity_analysis")
+                            .select { filter { eq("user_id", user.id) } }
+                            .decodeSingleOrNull<AIProductivityAnalysis>()
 
-
-                if (response.error != null) {
-                    val errorMessage = "Erreur de l'API Gemini lors de l'analyse : ${response.error.message}"
-                    _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
-                    return@launch
-                }
-
-                if (response.promptFeedback?.blockReason != null) {
-                    val blockReason = response.promptFeedback.blockReason
-                    val safetyRatings = response.promptFeedback.safetyRatings?.joinToString { "${it.category}: ${it.probability}" } ?: "N/A"
-                    val errorMessage = "L'analyse de productivité a été bloquée : $blockReason. Détails : $safetyRatings"
-                    _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
-                    return@launch
-                }
-
-
-                val analysisText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "SCORE: 0\nAnalyse indisponible."
-
-                val existingAnalysis = SupabaseManager.client.postgrest
-                    .from("ai_productivity_analysis")
-                    .select { filter { eq("user_id", user.id) } }
-                    .decodeSingleOrNull<AIProductivityAnalysis>()
-
-                if (existingAnalysis != null) {
-                    SupabaseManager.client.postgrest.from("ai_productivity_analysis")
-                        .update({ set("analysis_data", analysisText) }) {
-                            filter { eq("id", existingAnalysis.id!!) }
+                        if (existingAnalysis != null) {
+                            SupabaseManager.client.postgrest.from("ai_productivity_analysis")
+                                .update({ set("analysis_data", analysisText) }) {
+                                    filter { eq("id", existingAnalysis.id!!) }
+                                }
+                        } else {
+                            val newAnalysis = AIProductivityAnalysis(userId = user.id, analysisData = analysisText)
+                            SupabaseManager.client.postgrest.from("ai_productivity_analysis").insert(newAnalysis)
                         }
-                } else {
-                    val newAnalysis = AIProductivityAnalysis(userId = user.id, analysisData = analysisText)
-                    SupabaseManager.client.postgrest.from("ai_productivity_analysis").insert(newAnalysis)
+                        fetchProductivityAnalysis()
+                    }
+                    is GeminiResult.Error -> {
+                        val errorMessage = "Erreur d'analyse Gemini : ${result.errorMessage}"
+                        _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+                    }
                 }
-
-                fetchProductivityAnalysis()
 
             } catch (e: Exception) {
                 Log.e("AIViewModel", "Erreur lors de la génération de l'analyse", e)
