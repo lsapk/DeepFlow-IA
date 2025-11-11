@@ -2,10 +2,10 @@ package com.deepflowia.app.data
 
 import android.util.Log
 import com.deepflowia.app.models.GeminiResult
-import com.google.firebase.ai.client.generativeai.GenerativeModel
-import com.google.firebase.ai.client.generativeai.GenerativeBackend
+import com.google.firebase.Firebase
+import com.google.firebase.ai.GenerativeModel
 import com.google.firebase.ai.client.generativeai.ktx.generativeModel
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.ai.type.GenerativeBackend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
