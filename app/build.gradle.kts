@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization") version "2.2.20"
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 // Lire les propriétés locales
@@ -100,6 +101,7 @@ dependencies {
     // Firebase AI
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-ai")
+    implementation("com.google.firebase:firebase-common-ktx")
 
 
     testImplementation("junit:junit:4.13.2")
