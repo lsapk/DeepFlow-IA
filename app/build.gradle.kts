@@ -100,8 +100,9 @@ dependencies {
 
     // Firebase AI
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
-    implementation("com.google.firebase:firebase-ai")
     implementation("com.google.firebase:firebase-common-ktx")
+    implementation("com.google.firebase:firebase-vertexai-ktx")
+    implementation("com.google.firebase:firebase-ai:17.5.0")
 
 
     testImplementation("junit:junit:4.13.2")

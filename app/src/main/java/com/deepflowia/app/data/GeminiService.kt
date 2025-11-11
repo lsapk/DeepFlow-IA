@@ -4,8 +4,6 @@ import android.util.Log
 import com.deepflowia.app.models.GeminiResult
 import com.google.firebase.Firebase
 import com.google.firebase.ai.GenerativeModel
-import com.google.firebase.ai.client.generativeai.ktx.generativeModel
-import com.google.firebase.ai.type.GenerativeBackend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -13,8 +11,7 @@ object GeminiService {
 
     private fun getModel(modelName: String): GenerativeModel {
         return Firebase.generativeModel(
-            modelName = modelName,
-            backend = GenerativeBackend.googleAI()
+            modelName = modelName
         )
     }
 
