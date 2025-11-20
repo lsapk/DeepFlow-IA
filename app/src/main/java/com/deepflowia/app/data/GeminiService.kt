@@ -4,7 +4,7 @@ import android.util.Log
 import com.deepflowia.app.models.GeminiResult
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
-import com.google.firebase.ai.generativeModel
+
 import com.google.firebase.ai.type.GenerativeBackend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
