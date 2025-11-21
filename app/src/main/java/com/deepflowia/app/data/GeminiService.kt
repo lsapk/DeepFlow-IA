@@ -7,16 +7,18 @@ import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.generativeModel
 import com.google.firebase.ai.type.GenerativeBackend
-import com.google.firebase.ai.type.GenerativeModelOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object GeminiService {
 
     private fun getModel(modelName: String): com.google.firebase.ai.GenerativeModel {
-        val modelOptions = GenerativeModelOptions(apiKey = BuildConfig.GEMINI_API_KEY)
+        // Correct way to initialize the model with an API Key
         return Firebase.ai(backend = GenerativeBackend.googleAI())
-            .generativeModel(modelName = modelName, modelOptions = modelOptions)
+            .generativeModel(
+                modelName = modelName,
+                apiKey = BuildConfig.GEMINI_API_KEY
+            )
     }
 
     suspend fun generateContent(prompt: String, modelName: String): GeminiResult {
