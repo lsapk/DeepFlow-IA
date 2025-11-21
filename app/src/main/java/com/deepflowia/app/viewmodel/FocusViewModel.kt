@@ -50,7 +50,8 @@ class FocusViewModel : ViewModel() {
                 val result = SupabaseManager.client.postgrest
                     .from("focus_sessions")
                     .select {
-                        order("started_at", Order.DESC)
+                        //FIXME: Replace with the correct descending order enum
+                        order("started_at", Order.DESCENDING)
                     }
                     .decodeList<FocusSession>()
 
