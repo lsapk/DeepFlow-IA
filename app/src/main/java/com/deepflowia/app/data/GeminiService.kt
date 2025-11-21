@@ -5,15 +5,18 @@ import com.deepflowia.app.models.GeminiResult
 import com.deepflowia.app.BuildConfig
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
+import com.google.firebase.ai.generativeModel
 import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.type.GenerativeModelOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object GeminiService {
 
     private fun getModel(modelName: String): com.google.firebase.ai.GenerativeModel {
-        return Firebase.ai(backend = GenerativeBackend.googleAI(apiKey = BuildConfig.GEMINI_API_KEY))
-            .generativeModel(modelName)
+        val modelOptions = GenerativeModelOptions(apiKey = BuildConfig.GEMINI_API_KEY)
+        return Firebase.ai(backend = GenerativeBackend.googleAI())
+            .generativeModel(modelName = modelName, modelOptions = modelOptions)
     }
 
     suspend fun generateContent(prompt: String, modelName: String): GeminiResult {
