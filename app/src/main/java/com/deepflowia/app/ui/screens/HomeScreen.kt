@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +21,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.deepflowia.app.ui.components.StatChip
+import com.deepflowia.app.viewmodel.HomeReportState
+import com.deepflowia.app.viewmodel.HomeViewModel
 
 data class Feature(
     val title: String,
@@ -30,6 +36,7 @@ data class Feature(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    homeViewModel: HomeViewModel = viewModel(),
     onNavigateToTasks: () -> Unit,
     onNavigateToHabits: () -> Unit,
     onNavigateToGoals: () -> Unit,
@@ -38,6 +45,8 @@ fun HomeScreen(
     onNavigateToFocus: () -> Unit,
     onNavigateToReflection: () -> Unit,
 ) {
+    val reportState by homeViewModel.reportState.collectAsState()
+
     val features = listOf(
         Feature("Tâches", Icons.Filled.List, Color(0xFF6A1B9A), onNavigateToTasks),
         Feature("Habitudes", Icons.Default.SyncAlt, Color(0xFF0277BD), onNavigateToHabits),
@@ -73,7 +82,7 @@ fun HomeScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            ReportCard()
+            ReportCard(state = reportState)
             Spacer(modifier = Modifier.height(24.dp))
             FeaturesGrid(features = features, modifier = Modifier.weight(1f))
         }
@@ -81,7 +90,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun ReportCard() {
+fun ReportCard(state: HomeReportState) {
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -95,12 +104,15 @@ fun ReportCard() {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Suivi des 7 derniers jours - Objectif atteint à 85%",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                StatChip("Focus", "${state.focusMinutesToday} min")
+                StatChip("Tâches", "${state.tasksCompletedToday} terminées")
+                StatChip("Habitudes", "${state.habitsCompletedToday} faites")
+            }
         }
     }
 }

@@ -6,10 +6,15 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.media.RingtoneManager
 import android.os.Binder
 import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.deepflowia.app.MainActivity
@@ -56,7 +61,10 @@ class FocusTimerService : Service() {
         const val ACTION_STOP = "com.deepflowia.app.STOP"
         const val EXTRA_DURATION_MINUTES = "duration_minutes"
         const val EXTRA_SESSION_TITLE = "session_title"
+        const val EXTRA_DISTRACTION_FREE = "distraction_free"
     }
+
+    private var initialRingerMode: Int? = null
 
     private fun getCurrentTimestamp(): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
@@ -74,7 +82,8 @@ class FocusTimerService : Service() {
             ACTION_START -> {
                 val durationMinutes = intent.getLongExtra(EXTRA_DURATION_MINUTES, 25L)
                 val title = intent.getStringExtra(EXTRA_SESSION_TITLE)
-                startTimer(durationMinutes * 60 * 1000, title, isNewSession = true)
+                val distractionFree = intent.getBooleanExtra(EXTRA_DISTRACTION_FREE, false)
+                startTimer(durationMinutes * 60 * 1000, title, distractionFree, isNewSession = true)
             }
             ACTION_PAUSE -> pauseTimer()
             ACTION_RESUME -> resumeTimer()
@@ -83,12 +92,25 @@ class FocusTimerService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun startTimer(durationMillis: Long, title: String? = null, isNewSession: Boolean) {
+    private fun startTimer(durationMillis: Long, title: String? = null, distractionFree: Boolean, isNewSession: Boolean) {
         timeLeftInMillis = durationMillis
         _timeInMillis.value = timeLeftInMillis
         _timerState.value = TimerState.RUNNING
 
         if (isNewSession) {
+            if (distractionFree) {
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                if (notificationManager.isNotificationPolicyAccessGranted) {
+                    val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    initialRingerMode = audioManager.ringerMode
+                    audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+                } else {
+                    // Demander la permission à l'utilisateur
+                    val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                }
+            }
             val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
             if (userId != null) {
                 currentSession = FocusSession(
@@ -111,6 +133,35 @@ class FocusTimerService : Service() {
             }
 
             override fun onFinish() {
+                // Play sound and vibrate
+                try {
+                    val notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                    val r = RingtoneManager.getRingtone(applicationContext, notificationSound)
+                    r.play()
+                } catch (e: Exception) {
+                    Log.e("FocusTimerService", "Erreur lors de la lecture du son", e)
+                }
+
+                try {
+                    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                        vibratorManager.defaultVibrator
+                    } else {
+                        @Suppress("DEPRECATION")
+                        getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(500)
+                    }
+                } catch (e: Exception) {
+                    Log.e("FocusTimerService", "Erreur lors de la vibration", e)
+                }
+
+
                 stopTimer(completed = true)
             }
         }.start()
@@ -124,7 +175,8 @@ class FocusTimerService : Service() {
 
     private fun resumeTimer() {
         if (_timerState.value == TimerState.PAUSED) {
-            startTimer(timeLeftInMillis, currentSession?.title, isNewSession = false)
+            // When resuming, distraction free mode is not re-applied.
+            startTimer(timeLeftInMillis, currentSession?.title, distractionFree = false, isNewSession = false)
         }
     }
 
@@ -138,6 +190,12 @@ class FocusTimerService : Service() {
             saveSession(finalSession)
         }
         currentSession = null
+
+        initialRingerMode?.let {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.ringerMode = it
+            initialRingerMode = null
+        }
 
         stopForeground(true)
         stopSelf()

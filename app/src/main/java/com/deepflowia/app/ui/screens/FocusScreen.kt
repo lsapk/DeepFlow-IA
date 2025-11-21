@@ -10,6 +10,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ fun FocusScreen(navController: NavController) {
     var sessionTitle by remember { mutableStateOf("") }
     val durationOptions = listOf(15L, 25L, 45L, 60L)
     var selectedDuration by remember { mutableStateOf(25L) }
+    var distractionFreeMode by remember { mutableStateOf(false) }
 
     val serviceConnection = remember {
         object : ServiceConnection {
@@ -70,6 +72,11 @@ fun FocusScreen(navController: NavController) {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
+                },
+                actions = {
+                    IconButton(onClick = { navController.navigate("focus_stats") }) {
+                        Icon(Icons.Default.Leaderboard, contentDescription = "Statistiques")
+                    }
                 }
             )
         }
@@ -88,7 +95,9 @@ fun FocusScreen(navController: NavController) {
                     onTitleChange = { sessionTitle = it },
                     durationOptions = durationOptions,
                     selectedDuration = selectedDuration,
-                    onDurationSelected = { selectedDuration = it }
+                    onDurationSelected = { selectedDuration = it },
+                    distractionFreeMode = distractionFreeMode,
+                    onDistractionFreeModeChange = { distractionFreeMode = it }
                 )
             } else {
                 Text(
@@ -107,6 +116,7 @@ fun FocusScreen(navController: NavController) {
                         action = FocusTimerService.ACTION_START
                         putExtra(FocusTimerService.EXTRA_DURATION_MINUTES, selectedDuration)
                         putExtra(FocusTimerService.EXTRA_SESSION_TITLE, sessionTitle.ifBlank { null })
+                        putExtra(FocusTimerService.EXTRA_DISTRACTION_FREE, distractionFreeMode)
                     }
                     context.startService(intent)
                 },
@@ -125,7 +135,9 @@ private fun SetupUI(
     onTitleChange: (String) -> Unit,
     durationOptions: List<Long>,
     selectedDuration: Long,
-    onDurationSelected: (Long) -> Unit
+    onDurationSelected: (Long) -> Unit,
+    distractionFreeMode: Boolean,
+    onDistractionFreeModeChange: (Boolean) -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         OutlinedTextField(
@@ -148,6 +160,18 @@ private fun SetupUI(
                     label = { Text("$duration min") }
                 )
             }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Mode sans distraction", style = MaterialTheme.typography.titleMedium)
+            Switch(
+                checked = distractionFreeMode,
+                onCheckedChange = onDistractionFreeModeChange
+            )
         }
     }
 }

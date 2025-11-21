@@ -117,6 +117,7 @@ fun NavGraph(
         composable("help") { HelpScreen(navController = navController) }
         composable("terms") { TermsScreen(navController = navController) }
         composable("focus") { FocusScreen(navController = navController) }
+        composable("focus_stats") { FocusStatsScreen(navController = navController) }
         composable("reflection") { ReflectionScreen(navController = navController) }
         composable("reflection_detail/{reflectionIdOrQuestion}") { backStackEntry ->
             val reflectionIdOrQuestion = backStackEntry.arguments?.getString("reflectionIdOrQuestion")
