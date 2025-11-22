@@ -219,7 +219,8 @@ class FocusTimerService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannel(CHANNEL_ID, "Focus Timer Channel", NotificationManager.IMPORTANCE_DEFAULT)
+            val serviceChannel = NotificationChannel(CHANNEL_ID, "Focus Timer Channel", NotificationManager.IMPORTANCE_HIGH)
+            serviceChannel.description = "Canal pour les notifications du minuteur de focus"
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
         }

@@ -1,10 +1,12 @@
 package com.deepflowia.app.ui.screens
 
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -139,6 +141,33 @@ private fun SetupUI(
     distractionFreeMode: Boolean,
     onDistractionFreeModeChange: (Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    var showPermissionDialog by remember { mutableStateOf(false) }
+
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDialog = false },
+            title = { Text("Permission Requise") },
+            text = { Text("Pour activer le mode sans distraction, l'application a besoin de la permission de ne pas déranger. Veuillez l'activer dans les paramètres.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPermissionDialog = false
+                        val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text("Ouvrir les paramètres")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showPermissionDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         OutlinedTextField(
             value = sessionTitle,
@@ -170,7 +199,16 @@ private fun SetupUI(
             Text("Mode sans distraction", style = MaterialTheme.typography.titleMedium)
             Switch(
                 checked = distractionFreeMode,
-                onCheckedChange = onDistractionFreeModeChange
+                onCheckedChange = {
+                    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    if (notificationManager.isNotificationPolicyAccessGranted) {
+                        onDistractionFreeModeChange(it)
+                    } else {
+                        if(it) { // Only show dialog if user is trying to enable it
+                            showPermissionDialog = true
+                        }
+                    }
+                }
             )
         }
     }

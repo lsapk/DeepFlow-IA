@@ -140,29 +140,27 @@ fun HabitDetailScreen(
                     }
                 }
             }
-            if (frequency == "weekly") {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Quels jours de la semaine ?", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    val days = listOf("L", "M", "M", "J", "V", "S", "D")
-                    days.forEachIndexed { index, day ->
-                        val dayIndex = index + 1
-                        FilterChip(
-                            selected = selectedDays.contains(dayIndex),
-                            onClick = {
-                                if (selectedDays.contains(dayIndex)) {
-                                    selectedDays.remove(dayIndex)
-                                } else {
-                                    selectedDays.add(dayIndex)
-                                }
-                            },
-                            label = { Text(day) }
-                        )
-                    }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Quels jours de la semaine ? (laisser vide pour tous les jours)", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val days = listOf("L", "M", "M", "J", "V", "S", "D")
+                days.forEachIndexed { index, day ->
+                    val dayIndex = index + 1 // Lundi = 1, ..., Dimanche = 7
+                    FilterChip(
+                        selected = selectedDays.contains(dayIndex),
+                        onClick = {
+                            if (selectedDays.contains(dayIndex)) {
+                                selectedDays.remove(dayIndex)
+                            } else {
+                                selectedDays.add(dayIndex)
+                            }
+                        },
+                        label = { Text(day) }
+                    )
                 }
             }
             Spacer(modifier = Modifier.weight(1f))
