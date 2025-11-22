@@ -29,19 +29,22 @@ class HabitViewModel : ViewModel() {
     private val _showArchived = MutableStateFlow(false)
     val showArchived: StateFlow<Boolean> = _showArchived
 
-    private val _filteredHabits = combine(_habits, _showArchived) { habits, showArchived ->
-        val calendar = Calendar.getInstance()
-        // Calendar.DAY_OF_WEEK: Dimanche = 1, Lundi = 2, ..., Samedi = 7
-        // Notre logique: Lundi = 1, Mardi = 2, ..., Dimanche = 7
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-        val today = if (dayOfWeek == Calendar.SUNDAY) 7 else dayOfWeek - 1
+    private val _showAllHabits = MutableStateFlow(false)
+    val showAllHabits: StateFlow<Boolean> = _showAllHabits
 
-        habits.filter { habit ->
-            habit.isArchived == showArchived && (
-                    habit.frequency != "weekly" ||
-                            habit.daysOfWeek.isNullOrEmpty() ||
-                            habit.daysOfWeek.contains(today)
-                    )
+    private val _filteredHabits = combine(_habits, _showArchived, _showAllHabits) { habits, showArchived, showAll ->
+        if (showAll) {
+            habits.filter { it.isArchived == showArchived }
+        } else {
+            val calendar = Calendar.getInstance()
+            // Notre logique: Lundi = 1, Mardi = 2, ..., Dimanche = 7
+            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+            val today = if (dayOfWeek == Calendar.SUNDAY) 7 else dayOfWeek - 1
+
+            habits.filter { habit ->
+                val appearsToday = habit.daysOfWeek.isNullOrEmpty() || habit.daysOfWeek.contains(today)
+                habit.isArchived == showArchived && appearsToday
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -58,7 +61,10 @@ class HabitViewModel : ViewModel() {
 
     fun toggleShowArchived() {
         _showArchived.value = !_showArchived.value
-        // Le combine s'occupe de rafraîchir la liste filtrée
+    }
+
+    fun toggleShowAllHabits() {
+        _showAllHabits.value = !_showAllHabits.value
     }
 
     fun fetchHabits() {

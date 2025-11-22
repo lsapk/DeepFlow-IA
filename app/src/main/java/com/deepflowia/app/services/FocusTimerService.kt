@@ -30,6 +30,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Duration
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -117,7 +120,7 @@ class FocusTimerService : Service() {
                     id = UUID.randomUUID().toString(),
                     userId = userId,
                     title = title,
-                    duration = (durationMillis / (60 * 1000)).toInt(),
+                    duration = 0, // La durée sera calculée à la fin
                     startedAt = getCurrentTimestamp()
                 )
             }
@@ -185,8 +188,15 @@ class FocusTimerService : Service() {
         _timerState.value = TimerState.STOPPED
         _timeInMillis.value = 0L
 
-        currentSession?.let {
-            val finalSession = if (completed) it.copy(completedAt = getCurrentTimestamp()) else it
+        currentSession?.let { session ->
+            val endTime = OffsetDateTime.now(ZoneOffset.UTC)
+            val startTime = OffsetDateTime.parse(session.startedAt)
+            val actualDurationMinutes = Duration.between(startTime, endTime).toMinutes().toInt()
+
+            val finalSession = session.copy(
+                completedAt = if (completed) endTime.toString() else null, // Marquer comme complété seulement si le minuteur a fini
+                duration = actualDurationMinutes
+            )
             saveSession(finalSession)
         }
         currentSession = null

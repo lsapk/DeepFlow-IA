@@ -34,6 +34,7 @@ fun HabitsScreen(
     val habits by habitViewModel.habits.collectAsState()
     val completedHabitIds by habitViewModel.habitCompletions.collectAsState()
     val showArchived by habitViewModel.showArchived.collectAsState()
+    val showAll by habitViewModel.showAllHabits.collectAsState()
 
     Scaffold(
         topBar = {
@@ -66,8 +67,18 @@ fun HabitsScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                FilterChip(
+                    selected = !showAll,
+                    onClick = { habitViewModel.toggleShowAllHabits() },
+                    label = { Text(if (showAll) "Voir seulement aujourd'hui" else "Voir toutes") }
+                )
+            }
             val allHabitsCompleted = habits.isNotEmpty() && habits.all { completedHabitIds.contains(it.id) }
-            if (allHabitsCompleted) {
+            if (allHabitsCompleted && !showAll) { // Only show congratulations if viewing today's habits
                 Text(
                     text = "Félicitations ! Vous avez complété toutes vos habitudes du jour.",
                     color = Color(0xFF4CAF50),

@@ -15,9 +15,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -143,6 +145,15 @@ private fun SetupUI(
 ) {
     val context = LocalContext.current
     var showPermissionDialog by remember { mutableStateOf(false) }
+    var customDuration by remember { mutableStateOf("") }
+    val isCustomDurationSelected = !durationOptions.contains(selectedDuration)
+
+    // Si on sélectionne une durée prédéfinie, on efface le champ personnalisé
+    LaunchedEffect(selectedDuration) {
+        if (!isCustomDurationSelected) {
+            customDuration = ""
+        }
+    }
 
     if (showPermissionDialog) {
         AlertDialog(
@@ -180,16 +191,40 @@ private fun SetupUI(
         Spacer(modifier = Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         ) {
             durationOptions.forEach { duration ->
                 FilterChip(
-                    selected = selectedDuration == duration,
+                    selected = selectedDuration == duration && !isCustomDurationSelected,
                     onClick = { onDurationSelected(duration) },
                     label = { Text("$duration min") }
                 )
             }
+            FilterChip(
+                selected = isCustomDurationSelected,
+                onClick = {
+                    // Mettre une valeur par défaut si le champ est vide, ou la valeur actuelle
+                    val currentCustom = customDuration.toLongOrNull() ?: 30L
+                    onDurationSelected(currentCustom)
+                },
+                label = { Text("Autre") }
+            )
         }
+
+        if (isCustomDurationSelected) {
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = customDuration,
+                onValueChange = {
+                    customDuration = it
+                    it.toLongOrNull()?.let { value -> onDurationSelected(value) }
+                },
+                label = { Text("Durée personnalisée (minutes)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
