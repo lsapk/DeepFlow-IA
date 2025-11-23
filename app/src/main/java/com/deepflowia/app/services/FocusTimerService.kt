@@ -206,7 +206,7 @@ class FocusTimerService : Service() {
             val manager = getSystemService(NotificationManager::class.java)
 
             // Canal pour le minuteur en cours
-            val serviceChannel = NotificationChannel(CHANNEL_ID, "Session de Focus en cours", NotificationManager.IMPORTANCE_HIGH)
+            val serviceChannel = NotificationChannel(CHANNEL_ID, "Session de Focus en cours", NotificationManager.IMPORTANCE_LOW)
             serviceChannel.description = "Notification persistante pendant une session de focus"
             serviceChannel.setSound(null, null) // Pas de son pour la notif persistante
             serviceChannel.enableVibration(false)

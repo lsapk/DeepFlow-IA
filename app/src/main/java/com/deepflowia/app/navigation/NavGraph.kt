@@ -85,6 +85,7 @@ fun NavGraph(
             val taskId = backStackEntry.arguments?.getString("taskId")
             TaskDetailScreen(taskId = taskId, navController = navController)
         }
+        composable("task_stats") { TaskStatsScreen(navController = navController) }
         composable("habits") { HabitsScreen(navController = navController) }
         composable("habit_detail/{habitId}") { backStackEntry ->
             val habitId = backStackEntry.arguments?.getString("habitId")
@@ -96,6 +97,7 @@ fun NavGraph(
             val goalId = backStackEntry.arguments?.getString("goalId")
             GoalDetailScreen(navController = navController, goalId = goalId)
         }
+        composable("goal_stats") { GoalStatsScreen(navController = navController) }
         composable("journal") { JournalScreen(navController = navController) }
         composable("journal_detail/{journalId}") { backStackEntry ->
             val journalId = backStackEntry.arguments?.getString("journalId")
@@ -124,6 +126,8 @@ fun NavGraph(
             val reflectionIdOrQuestion = backStackEntry.arguments?.getString("reflectionIdOrQuestion")
             ReflectionDetailScreen(navController = navController, reflectionIdOrQuestion = reflectionIdOrQuestion)
         }
+        composable("reflection_stats") { ReflectionStatsScreen(navController = navController) }
+        composable("journal_stats") { JournalStatsScreen(navController = navController) }
         composable("edit_profile") {
             EditProfileScreen(navController = navController)
         }
