@@ -148,7 +148,7 @@ fun HabitDetailScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val days = listOf("L", "M", "M", "J", "V", "S", "D")
+                val days = listOf("L", "Ma", "Me", "J", "V", "S", "D")
                 days.forEachIndexed { index, day ->
                     val dayIndex = index + 1 // Lundi = 1, ..., Dimanche = 7
                     FilterChip(
