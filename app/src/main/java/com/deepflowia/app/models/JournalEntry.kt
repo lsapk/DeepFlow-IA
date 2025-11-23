@@ -11,6 +11,8 @@ data class JournalEntry(
     val userId: String,
     val title: String,
     val content: String,
+    @SerialName("mood")
+    val mood: String? = null,
     val date: String? = null,
     @SerialName("offline_id")
     val offlineId: String? = null,
