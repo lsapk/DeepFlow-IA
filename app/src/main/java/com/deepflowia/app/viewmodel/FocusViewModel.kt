@@ -84,8 +84,8 @@ class FocusViewModel : ViewModel() {
                     val odt = OffsetDateTime.parse(startedAtString)
                     val sessionDate = odt.atZoneSameInstant(ZoneId.systemDefault()).toLocalDate()
 
-                    // Durée de la session en minutes, en s'assurant qu'elle est terminée
-                    val duration = if (session.completedAt != null) session.duration.toLong() else 0L
+                    // On prend la durée enregistrée, qu'elle soit terminée ou non.
+                    val duration = session.duration.toLong()
 
                     // Calcul pour aujourd'hui
                     if (sessionDate.isEqual(today)) {

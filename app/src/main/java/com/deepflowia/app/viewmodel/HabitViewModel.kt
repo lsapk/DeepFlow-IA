@@ -20,8 +20,10 @@ import java.util.Locale
 
 class HabitViewModel : ViewModel() {
 
-    private val _habits = MutableStateFlow<List<Habit>>(emptyList())
-    val habits: StateFlow<List<Habit>> get() = _filteredHabits
+    private val _allHabits = MutableStateFlow<List<Habit>>(emptyList())
+    val allHabits: StateFlow<List<Habit>> get() = _allHabits
+
+    val filteredHabits: StateFlow<List<Habit>> get() = _filteredHabits
 
     private val _habitCompletions = MutableStateFlow<Set<String>>(emptySet())
     val habitCompletions: StateFlow<Set<String>> = _habitCompletions
@@ -32,16 +34,16 @@ class HabitViewModel : ViewModel() {
     private val _showAllHabits = MutableStateFlow(false)
     val showAllHabits: StateFlow<Boolean> = _showAllHabits
 
-    private val _filteredHabits = combine(_habits, _showArchived, _showAllHabits) { habits, showArchived, showAll ->
+    private val _filteredHabits = combine(_allHabits, _showArchived, _showAllHabits) { allHabits, showArchived, showAll ->
         if (showAll) {
-            habits.filter { it.isArchived == showArchived }
+            allHabits.filter { it.isArchived == showArchived }
         } else {
             val calendar = Calendar.getInstance()
             // Notre logique: Lundi = 1, Mardi = 2, ..., Dimanche = 7
             val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
             val today = if (dayOfWeek == Calendar.SUNDAY) 7 else dayOfWeek - 1
 
-            habits.filter { habit ->
+            allHabits.filter { habit ->
                 val appearsToday = habit.daysOfWeek.isNullOrEmpty() || habit.daysOfWeek.contains(today)
                 habit.isArchived == showArchived && appearsToday
             }
@@ -69,9 +71,8 @@ class HabitViewModel : ViewModel() {
 
     fun fetchHabits() {
         viewModelScope.launch {
-            // On récupère TOUTES les habitudes de l'utilisateur
             val result = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
-            _habits.value = result // On stocke la liste brute
+            _allHabits.value = result
         }
     }
 

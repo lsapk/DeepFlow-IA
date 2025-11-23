@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,7 +32,7 @@ fun HabitsScreen(
     navController: NavController,
     habitViewModel: HabitViewModel = viewModel()
 ) {
-    val habits by habitViewModel.habits.collectAsState()
+    val habits by habitViewModel.filteredHabits.collectAsState()
     val completedHabitIds by habitViewModel.habitCompletions.collectAsState()
     val showArchived by habitViewModel.showArchived.collectAsState()
     val showAll by habitViewModel.showAllHabits.collectAsState()
@@ -46,6 +47,9 @@ fun HabitsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { navController.navigate("habit_stats") }) {
+                        Icon(Icons.Default.Leaderboard, contentDescription = "Statistiques")
+                    }
                     TextButton(onClick = { habitViewModel.toggleShowArchived() }) {
                         Text(if (showArchived) "Voir actives" else "Voir archivées")
                     }

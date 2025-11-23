@@ -57,7 +57,9 @@ class FocusTimerService : Service() {
 
     companion object {
         const val NOTIFICATION_ID = 1
+        const val COMPLETION_NOTIFICATION_ID = 2
         const val CHANNEL_ID = "FocusTimerChannel"
+        const val COMPLETION_CHANNEL_ID = "FocusCompletionChannel"
         const val ACTION_START = "com.deepflowia.app.START"
         const val ACTION_PAUSE = "com.deepflowia.app.PAUSE"
         const val ACTION_RESUME = "com.deepflowia.app.RESUME"
@@ -136,35 +138,7 @@ class FocusTimerService : Service() {
             }
 
             override fun onFinish() {
-                // Play sound and vibrate
-                try {
-                    val notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    val r = RingtoneManager.getRingtone(applicationContext, notificationSound)
-                    r.play()
-                } catch (e: Exception) {
-                    Log.e("FocusTimerService", "Erreur lors de la lecture du son", e)
-                }
-
-                try {
-                    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                        vibratorManager.defaultVibrator
-                    } else {
-                        @Suppress("DEPRECATION")
-                        getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                    }
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        vibrator.vibrate(500)
-                    }
-                } catch (e: Exception) {
-                    Log.e("FocusTimerService", "Erreur lors de la vibration", e)
-                }
-
-
+                showCompletionNotification()
                 stopTimer(completed = true)
             }
         }.start()
@@ -229,11 +203,40 @@ class FocusTimerService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannel(CHANNEL_ID, "Focus Timer Channel", NotificationManager.IMPORTANCE_HIGH)
-            serviceChannel.description = "Canal pour les notifications du minuteur de focus"
             val manager = getSystemService(NotificationManager::class.java)
+
+            // Canal pour le minuteur en cours
+            val serviceChannel = NotificationChannel(CHANNEL_ID, "Session de Focus en cours", NotificationManager.IMPORTANCE_HIGH)
+            serviceChannel.description = "Notification persistante pendant une session de focus"
+            serviceChannel.setSound(null, null) // Pas de son pour la notif persistante
+            serviceChannel.enableVibration(false)
             manager.createNotificationChannel(serviceChannel)
+
+            // Canal pour l'alerte de fin
+            val completionChannel = NotificationChannel(COMPLETION_CHANNEL_ID, "Fin de session de Focus", NotificationManager.IMPORTANCE_HIGH)
+            completionChannel.description = "Alerte sonore et vibration à la fin d'une session de focus"
+            completionChannel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), null)
+            completionChannel.enableVibration(true)
+            completionChannel.vibrationPattern = longArrayOf(0, 500, 200, 500)
+            manager.createNotificationChannel(completionChannel)
         }
+    }
+
+    private fun showCompletionNotification() {
+        val notificationIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+
+        val builder = NotificationCompat.Builder(this, COMPLETION_CHANNEL_ID)
+            .setContentTitle("Session de Focus Terminée !")
+            .setContentText("Bravo pour votre concentration.")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(COMPLETION_NOTIFICATION_ID, builder.build())
     }
 
     private fun createNotification(): NotificationCompat.Builder {

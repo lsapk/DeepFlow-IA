@@ -26,8 +26,9 @@ fun HabitDetailScreen(
     habitViewModel: HabitViewModel = viewModel()
 ) {
     val isNewHabit = habitId == "-1"
+    val allHabits by habitViewModel.allHabits.collectAsState()
     val habitToEdit = if (!isNewHabit) {
-        habitViewModel.habits.collectAsState().value.find { it.id == habitId }
+        allHabits.find { it.id == habitId }
     } else {
         null
     }

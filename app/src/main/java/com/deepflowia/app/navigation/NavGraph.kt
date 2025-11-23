@@ -90,6 +90,7 @@ fun NavGraph(
             val habitId = backStackEntry.arguments?.getString("habitId")
             HabitDetailScreen(habitId = habitId, navController = navController)
         }
+        composable("habit_stats") { HabitStatsScreen(navController = navController) }
         composable("goals") { GoalsScreen(navController = navController) }
         composable("goal_detail/{goalId}") { backStackEntry ->
             val goalId = backStackEntry.arguments?.getString("goalId")
