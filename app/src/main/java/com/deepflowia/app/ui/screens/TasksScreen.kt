@@ -43,6 +43,9 @@ fun TasksScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { navController.navigate("task_stats") }) {
+                        Icon(Icons.Default.Leaderboard, contentDescription = "Statistiques")
+                    }
                     TextButton(onClick = { showCompleted = !showCompleted }) {
                         Text(if (showCompleted) "Voir actives" else "Voir complétées")
                     }

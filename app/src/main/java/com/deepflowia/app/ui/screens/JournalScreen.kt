@@ -38,6 +38,11 @@ fun JournalScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { navController.navigate("journal_stats") }) {
+                        Icon(Icons.Default.Leaderboard, contentDescription = "Statistiques")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
