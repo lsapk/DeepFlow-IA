@@ -14,7 +14,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.deepflowia.app.ui.screens.*
-import com.deepflowia.app.ui.screens.AIChatScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
@@ -104,7 +103,7 @@ fun NavGraph(
             JournalDetailScreen(journalId = journalId, navController = navController)
         }
         composable(BottomNavItem.AI.route) { AIScreen(navController = navController) }
-        composable("ai_chat") { AIChatScreen() }
+        composable("ai_chat") { AICompanionScreen() }
         composable("productivity_analysis") { ProductivityAnalysisScreen() }
         composable(BottomNavItem.Profile.route) {
             ProfileScreen(

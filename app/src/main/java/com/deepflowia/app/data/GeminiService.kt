@@ -2,43 +2,70 @@ package com.deepflowia.app.data
 
 import android.util.Log
 import com.deepflowia.app.models.GeminiResult
-import com.google.firebase.Firebase
-import com.google.firebase.ai.ai
-import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.Chat
+import com.google.firebase.ai.FirebaseAI
+import com.google.firebase.ai.GenerativeModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-object GeminiService {
+class GeminiService {
 
-    private fun getModel(modelName: String): com.google.firebase.ai.GenerativeModel {
-        return Firebase.ai(backend = GenerativeBackend.googleAI())
-            .generativeModel(modelName)
+    private val generativeModel: GenerativeModel by lazy {
+        FirebaseAI.getInstance().generativeModel("gemini-1.5-flash")
     }
 
-    suspend fun generateContent(prompt: String, modelName: String): GeminiResult {
+    suspend fun generateContent(prompt: String): GeminiResult {
         return withContext(Dispatchers.IO) {
             try {
-                val model = getModel(modelName)
-                val response = model.generateContent(prompt)
-
-                if (response.promptFeedback?.blockReason != null) {
-                    val blockReason = response.promptFeedback?.blockReason.toString()
-                    val safetyRatings = response.promptFeedback?.safetyRatings.toString()
-                    val errorMessage = "Votre demande a été bloquée pour la raison suivante : $blockReason."
-                    Log.w("GeminiService", "$errorMessage Détails de sécurité : $safetyRatings")
-                    GeminiResult.Error(errorMessage, blockReason, safetyRatings)
+                Log.d("GeminiService", "Envoi du prompt : $prompt")
+                val response = generativeModel.generateContent(prompt)
+                val responseText = response.text
+                if (responseText != null) {
+                    Log.d("GeminiService", "Réponse reçue : $responseText")
+                    GeminiResult.Success(responseText)
                 } else {
-                    val responseText = response.text ?: ""
-                    if (responseText.isNotEmpty()) {
-                        GeminiResult.Success(responseText)
-                    } else {
-                        Log.w("GeminiService", "Réponse de Gemini vide.")
-                        GeminiResult.Error("La réponse du modèle était vide.")
-                    }
+                    val blockReason = response.promptFeedback?.blockReason?.toString() ?: "Inconnue"
+                    val safetyRatings = response.promptFeedback?.safetyRatings?.toString() ?: "Aucune"
+                    Log.e("GeminiService", "Réponse nulle de l'API. Raison du blocage : $blockReason, Évaluations de sécurité : $safetyRatings")
+                    GeminiResult.Error(
+                        errorMessage = "La réponse de l'API était vide mais sans erreur explicite.",
+                        blockReason = blockReason,
+                        safetyRatings = safetyRatings
+                    )
                 }
             } catch (e: Exception) {
-                Log.e("GeminiService", "Erreur lors de la génération de contenu Gemini", e)
-                GeminiResult.Error("Erreur de communication avec l'API Gemini: ${e.message}")
+                Log.e("GeminiService", "Erreur lors de la génération de contenu", e)
+                GeminiResult.Error("Erreur lors de l'appel à l'API Gemini : ${e.message}")
+            }
+        }
+    }
+
+    fun startChat(): Chat {
+        return generativeModel.startChat()
+    }
+
+    suspend fun sendChatMessage(chat: Chat, prompt: String): GeminiResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("GeminiService", "Envoi du message de chat : $prompt")
+                val response = chat.sendMessage(prompt)
+                val responseText = response.text
+                if (responseText != null) {
+                    Log.d("GeminiService", "Réponse de chat reçue : $responseText")
+                    GeminiResult.Success(responseText)
+                } else {
+                    val blockReason = response.promptFeedback?.blockReason?.toString() ?: "Inconnue"
+                    val safetyRatings = response.promptFeedback?.safetyRatings?.toString() ?: "Aucune"
+                    Log.e("GeminiService", "Réponse de chat nulle. Raison du blocage : $blockReason, Évaluations de sécurité : $safetyRatings")
+                    GeminiResult.Error(
+                        errorMessage = "La réponse de l'API était vide.",
+                        blockReason = blockReason,
+                        safetyRatings = safetyRatings
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("GeminiService", "Erreur lors de l'envoi du message de chat", e)
+                GeminiResult.Error("Erreur lors de l'appel à l'API de chat Gemini : ${e.message}")
             }
         }
     }
