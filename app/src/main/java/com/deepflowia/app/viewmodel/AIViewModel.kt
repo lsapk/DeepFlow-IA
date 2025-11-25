@@ -5,10 +5,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.GeminiResult
 import com.deepflowia.app.data.GeminiService
+
+import com.deepflowia.app.data.SupabaseManager
+import com.deepflowia.app.models.*
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
+
 import com.deepflowia.app.models.ChatMessage
 import com.deepflowia.app.models.SuggestedAction
 import com.deepflowia.app.models.Task
 import com.deepflowia.app.models.parseSuggestedAction
+
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -18,6 +26,8 @@ enum class AIMode {
     CREATION,   // Help user create tasks, habits, etc.
     ANALYSE     // Analyze user's productivity data
 }
+
+
 
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.AIProductivityAnalysis
@@ -32,6 +42,7 @@ import kotlinx.coroutines.flow.firstOrNull
 
 
 // Represents the UI state for the AI screen
+
 data class AIUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -43,6 +54,16 @@ data class AIUiState(
 )
 
 class AIViewModel(
+
+    private val taskViewModel: TaskViewModel = TaskViewModel(),
+    private val habitViewModel: HabitViewModel = HabitViewModel(),
+    private val goalViewModel: GoalViewModel = GoalViewModel(),
+    private val focusViewModel: FocusViewModel = FocusViewModel()
+) : ViewModel() {
+
+    private val geminiService = GeminiService()
+
+
 
 
     // In a real app with dependency injection, these would be injected.
@@ -78,7 +99,10 @@ class AIViewModel(
     val uiState: StateFlow<AIUiState> = _uiState.asStateFlow()
 
     init {
+
+
         // Add an initial message from the assistant
+
         _uiState.update {
             it.copy(
                 conversation = listOf(
@@ -91,12 +115,16 @@ class AIViewModel(
         }
     }
 
+
+    fun sendMessage(userMessage: String) {
+
     /**
      * Sends a message to the Gemini service and updates the UI state.
      * @param userMessage The message text from the user.
      */
     fun sendMessage(userMessage: String) {
         // Add user message to the conversation and set loading state
+
         _uiState.update {
             it.copy(
                 isLoading = true,
@@ -106,7 +134,10 @@ class AIViewModel(
         }
 
         viewModelScope.launch {
+
+
             // TODO: Add context from user data (tasks, habits, etc.) to the prompt based on the current mode.
+
             val prompt = buildPrompt(userMessage)
 
             when (val result = geminiService.generateContent(prompt)) {
@@ -114,12 +145,10 @@ class AIViewModel(
                     val aiResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
                     var suggestedAction: SuggestedAction? = null
 
-                    // If in Creation mode, try to parse a suggested action from the response
                     if (_uiState.value.currentMode == AIMode.CREATION) {
                         suggestedAction = parseSuggestedAction(aiResponse)
                     }
 
-                    // Add AI response to the conversation and update state
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -129,7 +158,6 @@ class AIViewModel(
                     }
                 }
                 is GeminiResult.Error -> {
-                    // Set error message and reset loading state
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -141,34 +169,24 @@ class AIViewModel(
         }
     }
 
-    /**
-     * Confirms the action suggested by the AI (e.g., creates a new task).
-     */
     fun confirmSuggestedAction() {
         val action = _uiState.value.suggestedAction ?: return
-
         val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return
-
 
         viewModelScope.launch {
             when (action.type.lowercase()) {
                 "tâche", "task" -> {
                     val newTask = Task(
-
                         userId = userId,
-
-
                         title = action.titre,
                         description = action.details
                     )
                     taskViewModel.createTask(newTask)
                 }
-                // TODO: Add cases for "habitude", "objectif", etc.
             }
-            // Add a confirmation message to the chat
             _uiState.update {
                 it.copy(
-                    suggestedAction = null, // Clear the action
+                    suggestedAction = null,
                     conversation = it.conversation + ChatMessage(
                         text = "Parfait, j'ai créé la tâche : '${action.titre}'.",
                         isFromUser = false
@@ -178,29 +196,19 @@ class AIViewModel(
         }
     }
 
-    /**
-     * Clears the current suggested action without executing it.
-     */
     fun clearSuggestedAction() {
         _uiState.update { it.copy(suggestedAction = null) }
     }
 
-    /**
-     * Changes the interaction mode of the AI assistant.
-     * @param newMode The new AIMode to set.
-     */
     fun setMode(newMode: AIMode) {
-        _uiState.update { it.copy(currentMode = newMode, suggestedAction = null) } // Clear suggestion on mode change
-        // Optionally, send a message to the user confirming the mode change
+        _uiState.update { it.copy(currentMode = newMode, suggestedAction = null) }
         _uiState.update {
             val modeText = when (newMode) {
                 AIMode.DISCUSSION -> "Mode Discussion activé. Comment puis-je vous aider à réfléchir ?"
                 AIMode.CREATION -> "Mode Création activé. Dites-moi ce que vous voulez créer (tâche, habitude...)."
                 AIMode.ANALYSE -> "Mode Analyse activé. Que souhaitez-vous analyser ?"
             }
-            it.copy(
-                conversation = it.conversation + ChatMessage(text = modeText, isFromUser = false)
-            )
+            it.copy(conversation = it.conversation + ChatMessage(text = modeText, isFromUser = false))
         }
     }
 
@@ -226,6 +234,92 @@ class AIViewModel(
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
             }
+        }
+    }
+
+    fun generateAndStoreProductivityAnalysis() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isAnalysisLoading = true, errorMessage = null) }
+
+            val tasks = taskViewModel.tasks.value
+            val habits = habitViewModel.filteredHabits.value
+            val goals = goalViewModel.filteredGoals.value
+            val sessions = focusViewModel.focusSessions.value
+
+            val context = """
+                Données de l'utilisateur:
+                - Tâches (${tasks.size} au total, ${tasks.count { it.completed }} complétées}): ${tasks.take(10).joinToString { it.title }}
+                - Habitudes (${habits.size}): ${habits.take(10).joinToString { it.title }}
+                - Objectifs (${goals.size}): ${goals.take(10).joinToString { it.title }}
+                - Sessions de concentration (${sessions.size}): ${sessions.sumOf { it.duration }} minutes au total.
+            """.trimIndent()
+
+            val prompt = """
+                Analysez les données de productivité suivantes pour un utilisateur.
+                Fournissez une analyse structurée en français.
+                Votre réponse DOIT commencer par 'SCORE: [un nombre entier entre 0 et 100]%' suivi d'un retour à la ligne.
+                Ensuite, incluez les sections 'RECOMMANDATIONS:' et 'INSIGHTS:'.
+                $context
+            """.trimIndent()
+
+            when(val result = geminiService.generateContent(prompt)) {
+                is GeminiResult.Success -> {
+                    val analysisText = result.text ?: "L'analyse a échoué."
+                    val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
+                    val analysisData = AIProductivityAnalysis(
+                        userId = userId,
+                        analysisData = analysisText
+                    )
+                    try {
+                        val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
+                            .upsert(analysisData)
+                            .decodeSingle<AIProductivityAnalysis>()
+                        _uiState.update { it.copy(productivityAnalysis = savedAnalysis, isAnalysisLoading = false) }
+                    } catch (e: Exception) {
+                         _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
+                    }
+                }
+                is GeminiResult.Error -> {
+                    _uiState.update { it.copy(errorMessage = result.message, isAnalysisLoading = false) }
+                }
+            }
+        }
+    }
+
+    private fun buildPrompt(userMessage: String): String {
+        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise et utile."
+        var userDataContext = ""
+
+        val modeInstruction = when (_uiState.value.currentMode) {
+            AIMode.DISCUSSION -> "Mode actuel : Discussion. Aidez l'utilisateur à réfléchir et à trouver des idées."
+            AIMode.CREATION -> "Mode actuel : Création. Si l'utilisateur exprime une intention de créer une tâche, une habitude ou un objectif, répondez avec un format JSON simple comme `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\"}`. Sinon, discutez normalement."
+            AIMode.ANALYSE -> {
+                val tasks = taskViewModel.tasks.value
+                val habits = habitViewModel.filteredHabits.value
+
+                val taskSummary = "L'utilisateur a ${tasks.count()} tâches. ${tasks.count { it.completed }} sont terminées. Titres: ${tasks.take(5).joinToString { it.title }}."
+                val habitSummary = "L'utilisateur suit ${habits.count()} habitudes. Titres: ${habits.take(5).joinToString { it.title }}."
+
+                userDataContext = "Voici un résumé des données de l'utilisateur:\n- Tâches: $taskSummary\n- Habitudes: $habitSummary"
+                "Mode actuel : Analyse. Analysez les données fournies et répondez à la demande de l'utilisateur."
+            }
+        }
+
+        return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    class AIViewModelFactory(
+        private val taskViewModel: TaskViewModel,
+        private val habitViewModel: HabitViewModel,
+        private val goalViewModel: GoalViewModel,
+        private val focusViewModel: FocusViewModel
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(AIViewModel::class.java)) {
+                return AIViewModel(taskViewModel, habitViewModel, goalViewModel, focusViewModel) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 
