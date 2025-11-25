@@ -21,9 +21,9 @@ enum class AIMode {
 
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.AIProductivityAnalysis
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
-import kotlinx.coroutines.flow.firstOrNull
 
 // Represents the UI state for the AI screen
 data class AIUiState(
@@ -37,8 +37,6 @@ data class AIUiState(
 )
 
 class AIViewModel(
-    // In a real app with dependency injection, these would be injected.
-    // Here we instantiate them directly, following the project's pattern.
     private val taskViewModel: TaskViewModel = TaskViewModel(),
     private val habitViewModel: HabitViewModel = HabitViewModel(),
     private val goalViewModel: GoalViewModel = GoalViewModel(),
@@ -137,11 +135,13 @@ class AIViewModel(
      */
     fun confirmSuggestedAction() {
         val action = _uiState.value.suggestedAction ?: return
+        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return
 
         viewModelScope.launch {
             when (action.type.lowercase()) {
                 "tâche", "task" -> {
                     val newTask = Task(
+                        userId = userId,
                         title = action.titre,
                         description = action.details
                     )
@@ -222,9 +222,9 @@ class AIViewModel(
 
             // 1. Gather all user data
             val tasks = taskViewModel.tasks.value
-            val habits = habitViewModel.habits.value
-            val goals = goalViewModel.goals.value
-            val sessions = focusViewModel.sessions.value.firstOrNull() ?: emptyList()
+            val habits = habitViewModel.filteredHabits.value
+            val goals = goalViewModel.filteredGoals.value
+            val sessions = focusViewModel.focusSessions.value
 
             // 2. Create a detailed context string
             val context = """
@@ -255,10 +255,9 @@ class AIViewModel(
                     )
                     // 5. Store the result in Supabase
                     try {
-                        val savedAnalysis = SupabaseManager.client.postgrest["ai_productivity_analysis"]
-                            .upsert(analysisData, onConflict = "user_id") {
-                                select()
-                            }.decodeSingle<AIProductivityAnalysis>()
+                        val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
+                            .upsert(analysisData)
+                            .decodeSingle<AIProductivityAnalysis>()
                         _uiState.update { it.copy(productivityAnalysis = savedAnalysis, isAnalysisLoading = false) }
                     } catch (e: Exception) {
                          _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
@@ -279,10 +278,8 @@ class AIViewModel(
             AIMode.DISCUSSION -> "Mode actuel : Discussion. Aidez l'utilisateur à réfléchir et à trouver des idées."
             AIMode.CREATION -> "Mode actuel : Création. Si l'utilisateur exprime une intention de créer une tâche, une habitude ou un objectif, répondez avec un format JSON simple comme `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\"}`. Sinon, discutez normalement."
             AIMode.ANALYSE -> {
-                // Collect the latest data from the flows for context.
-                // This is a simplified snapshot. A more complex implementation might use combine.
                 val tasks = taskViewModel.tasks.value
-                val habits = habitViewModel.habits.value
+                val habits = habitViewModel.filteredHabits.value
 
                 val taskSummary = "L'utilisateur a ${tasks.count()} tâches. ${tasks.count { it.completed }} sont terminées. Titres: ${tasks.take(5).joinToString { it.title }}."
                 val habitSummary = "L'utilisateur suit ${habits.count()} habitudes. Titres: ${habits.take(5).joinToString { it.title }}."
