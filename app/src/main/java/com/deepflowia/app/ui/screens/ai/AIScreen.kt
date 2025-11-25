@@ -7,6 +7,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+
+import androidx.compose.material.icons.Icons
+
+
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -22,6 +26,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.deepflowia.app.models.ChatMessage
+
+import com.deepflowia.app.viewmodel.*
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+
 import com.deepflowia.app.viewmodel.AIMode
 import com.deepflowia.app.viewmodel.AIViewModel
 import kotlinx.coroutines.launch
@@ -32,6 +42,7 @@ import com.deepflowia.app.viewmodel.TaskViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 import com.deepflowia.app.viewmodel.FocusViewModel
 import com.deepflowia.app.viewmodel.GoalViewModel
+
 
 @Composable
 fun AIScreen(
@@ -113,6 +124,10 @@ fun AIScreen(
         }
     )
 }
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+
 
 @Composable
 fun ModeSelector(currentMode: AIMode, onModeSelected: (AIMode) -> Unit) {
