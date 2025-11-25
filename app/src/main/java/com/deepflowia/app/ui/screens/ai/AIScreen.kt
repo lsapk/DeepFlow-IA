@@ -7,6 +7,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+
+
+
+import androidx.compose.material.icons.Icons
+
+
+
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -15,17 +22,41 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+
+
+import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.deepflowia.app.models.ChatMessage
+
 import com.deepflowia.app.models.SuggestedAction
+
+
+
 import com.deepflowia.app.viewmodel.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
+
+
+
+import com.deepflowia.app.viewmodel.AIMode
+import com.deepflowia.app.viewmodel.AIViewModel
+import kotlinx.coroutines.launch
+
+import com.deepflowia.app.viewmodel.HabitViewModel
+import com.deepflowia.app.viewmodel.TaskViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+import com.deepflowia.app.viewmodel.FocusViewModel
+import com.deepflowia.app.viewmodel.GoalViewModel
+
+
+
 @Composable
 fun AIScreen(
     navController: NavController,
@@ -40,6 +71,10 @@ fun AIScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
+
+
+    // Scroll to the bottom when a new message arrives
+
     LaunchedEffect(uiState.conversation.size) {
         if (uiState.conversation.isNotEmpty()) {
             coroutineScope.launch {
@@ -47,6 +82,9 @@ fun AIScreen(
             }
         }
     }
+
+
+    // Show confirmation dialog when a suggested action is available
 
     if (uiState.suggestedAction != null) {
         ConfirmationDialog(
@@ -105,7 +143,13 @@ fun AIScreen(
     )
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+
+
 @Composable
 fun ModeSelector(currentMode: AIMode, onModeSelected: (AIMode) -> Unit) {
     Row(
@@ -157,7 +201,11 @@ fun MessageBubble(message: ChatMessage) {
 
 @Composable
 fun ConfirmationDialog(
+
     action: SuggestedAction,
+
+    action: com.deepflowia.app.models.SuggestedAction,
+
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
