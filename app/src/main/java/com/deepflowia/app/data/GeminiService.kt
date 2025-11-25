@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 
 class GeminiService {
 
+    // Service pour interagir avec l'API Google Gemini via le SDK Firebase AI.
     private val generativeModel: GenerativeModel by lazy {
         FirebaseAI.getInstance().generativeModel("gemini-1.5-flash")
     }
