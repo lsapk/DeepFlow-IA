@@ -1,45 +1,45 @@
 package com.deepflowia.app.data
 
 import android.util.Log
-import com.deepflowia.app.models.GeminiResult
-import com.google.firebase.Firebase
-import com.google.firebase.ai.ai
-import com.google.firebase.ai.type.GenerativeBackend
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.google.firebase.ai.FirebaseAI
+import com.google.firebase.ai.type.GenerateContentResponse
 
-object GeminiService {
+// Sealed class to represent the result of a Gemini API call
+sealed class GeminiResult {
+    data class Success(val text: String?) : GeminiResult()
+    data class Error(val message: String) : GeminiResult()
+}
 
-    private fun getModel(modelName: String): com.google.firebase.ai.GenerativeModel {
-        return Firebase.ai(backend = GenerativeBackend.googleAI())
-            .generativeModel(modelName)
-    }
+class GeminiService {
 
-    suspend fun generateContent(prompt: String, modelName: String): GeminiResult {
-        return withContext(Dispatchers.IO) {
-            try {
-                val model = getModel(modelName)
-                val response = model.generateContent(prompt)
+    // Initialize the generative model from Firebase
+    // Model name can be "gemini-1.5-flash" for the fastest model
+    private val generativeModel = FirebaseAI.getInstance().generativeModel("gemini-1.5-flash")
 
-                if (response.promptFeedback?.blockReason != null) {
-                    val blockReason = response.promptFeedback?.blockReason.toString()
-                    val safetyRatings = response.promptFeedback?.safetyRatings.toString()
-                    val errorMessage = "Votre demande a été bloquée pour la raison suivante : $blockReason."
-                    Log.w("GeminiService", "$errorMessage Détails de sécurité : $safetyRatings")
-                    GeminiResult.Error(errorMessage, blockReason, safetyRatings)
-                } else {
-                    val responseText = response.text ?: ""
-                    if (responseText.isNotEmpty()) {
-                        GeminiResult.Success(responseText)
-                    } else {
-                        Log.w("GeminiService", "Réponse de Gemini vide.")
-                        GeminiResult.Error("La réponse du modèle était vide.")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("GeminiService", "Erreur lors de la génération de contenu Gemini", e)
-                GeminiResult.Error("Erreur de communication avec l'API Gemini: ${e.message}")
+    /**
+     * Sends a prompt to the Gemini model and returns the generated content.
+     * @param prompt The text prompt to send to the model.
+     * @return A [GeminiResult] object containing either the successful response or an error message.
+     */
+    suspend fun generateContent(prompt: String): GeminiResult {
+        return try {
+            // Send the prompt to the model
+            val response: GenerateContentResponse = generativeModel.generateContent(prompt)
+
+            // Handle potential safety blocks in the response
+            if (response.promptFeedback?.blockReason != null) {
+                val blockReason = response.promptFeedback?.blockReason.toString()
+                Log.e("GeminiService", "Prompt bloqué pour la raison : $blockReason")
+                GeminiResult.Error("La requête a été bloquée pour des raisons de sécurité : $blockReason")
+            } else {
+                // Return the successful response text
+                Log.d("GeminiService", "Réponse de Gemini reçue : ${response.text}")
+                GeminiResult.Success(response.text)
             }
+        } catch (e: Exception) {
+            // Log and return any exception that occurs
+            Log.e("GeminiService", "Erreur lors de la communication avec l'API Gemini", e)
+            GeminiResult.Error(e.message ?: "Une erreur inconnue est survenue.")
         }
     }
 }
