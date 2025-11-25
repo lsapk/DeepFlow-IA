@@ -1,9 +1,14 @@
 package com.deepflowia.app.data
 
 import android.util.Log
+
 import com.google.firebase.ai.ktx.ai
 import com.google.firebase.ai.type.GenerateContentResponse
 import com.google.firebase.ktx.Firebase
+
+import com.google.firebase.ai.FirebaseAI
+import com.google.firebase.ai.type.GenerateContentResponse
+
 
 // Sealed class to represent the result of a Gemini API call
 sealed class GeminiResult {
@@ -13,9 +18,15 @@ sealed class GeminiResult {
 
 class GeminiService {
 
+
     // Initialize the generative model from Firebase using the KTX extension
     // Model name can be "gemini-1.5-flash" for the fastest model
     private val generativeModel = Firebase.ai.generativeModel("gemini-1.5-flash")
+
+    // Initialize the generative model from Firebase
+    // Model name can be "gemini-1.5-flash" for the fastest model
+    private val generativeModel = FirebaseAI.getInstance().generativeModel("gemini-1.5-flash")
+
 
     /**
      * Sends a prompt to the Gemini model and returns the generated content.
