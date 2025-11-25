@@ -11,12 +11,6 @@ import com.deepflowia.app.models.*
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
-
-import com.deepflowia.app.models.ChatMessage
-import com.deepflowia.app.models.SuggestedAction
-import com.deepflowia.app.models.Task
-import com.deepflowia.app.models.parseSuggestedAction
-
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -26,22 +20,6 @@ enum class AIMode {
     CREATION,   // Help user create tasks, habits, etc.
     ANALYSE     // Analyze user's productivity data
 }
-
-
-
-import com.deepflowia.app.data.SupabaseManager
-import com.deepflowia.app.models.AIProductivityAnalysis
-
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Order
-
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Order
-import kotlinx.coroutines.flow.firstOrNull
-
-
-// Represents the UI state for the AI screen
 
 data class AIUiState(
     val isLoading: Boolean = false,
@@ -54,42 +32,11 @@ data class AIUiState(
 )
 
 class AIViewModel(
-
     private val taskViewModel: TaskViewModel = TaskViewModel(),
     private val habitViewModel: HabitViewModel = HabitViewModel(),
     private val goalViewModel: GoalViewModel = GoalViewModel(),
     private val focusViewModel: FocusViewModel = FocusViewModel()
 ) : ViewModel() {
-
-    private val geminiService = GeminiService()
-
-
-
-
-    // In a real app with dependency injection, these would be injected.
-    // Here we instantiate them directly, following the project's pattern.
-
-    private val taskViewModel: TaskViewModel = TaskViewModel(),
-    private val habitViewModel: HabitViewModel = HabitViewModel(),
-    private val goalViewModel: GoalViewModel = GoalViewModel(),
-    private val focusViewModel: FocusViewModel = FocusViewModel()
-) : ViewModel() {
-
-    // Factory to create AIViewModel with its dependencies
-    @Suppress("UNCHECKED_CAST")
-    class AIViewModelFactory(
-        private val taskViewModel: TaskViewModel,
-        private val habitViewModel: HabitViewModel,
-        private val goalViewModel: GoalViewModel,
-        private val focusViewModel: FocusViewModel
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(AIViewModel::class.java)) {
-                return AIViewModel(taskViewModel, habitViewModel, goalViewModel, focusViewModel) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
-        }
-    }
 
     private val geminiService = GeminiService()
 
@@ -99,10 +46,6 @@ class AIViewModel(
     val uiState: StateFlow<AIUiState> = _uiState.asStateFlow()
 
     init {
-
-
-        // Add an initial message from the assistant
-
         _uiState.update {
             it.copy(
                 conversation = listOf(
@@ -115,16 +58,7 @@ class AIViewModel(
         }
     }
 
-
     fun sendMessage(userMessage: String) {
-
-    /**
-     * Sends a message to the Gemini service and updates the UI state.
-     * @param userMessage The message text from the user.
-     */
-    fun sendMessage(userMessage: String) {
-        // Add user message to the conversation and set loading state
-
         _uiState.update {
             it.copy(
                 isLoading = true,
@@ -134,10 +68,6 @@ class AIViewModel(
         }
 
         viewModelScope.launch {
-
-
-            // TODO: Add context from user data (tasks, habits, etc.) to the prompt based on the current mode.
-
             val prompt = buildPrompt(userMessage)
 
             when (val result = geminiService.generateContent(prompt)) {
@@ -210,18 +140,29 @@ class AIViewModel(
             }
             it.copy(conversation = it.conversation + ChatMessage(text = modeText, isFromUser = false))
         }
+
+        return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    class AIViewModelFactory(
+        private val taskViewModel: TaskViewModel,
+        private val habitViewModel: HabitViewModel,
+        private val goalViewModel: GoalViewModel,
+        private val focusViewModel: FocusViewModel
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(AIViewModel::class.java)) {
+                return AIViewModel(taskViewModel, habitViewModel, goalViewModel, focusViewModel) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 
     /**
-     * Builds the final prompt to be sent to the Gemini API,
-     * including context and mode-specific instructions.
-     * @param userMessage The raw message from the user.
-     * @return The complete prompt string.
+     * Generates a new productivity analysis, sends it to Gemini, and stores the result.
      */
-    /**
-     * Fetches the most recent productivity analysis from the database.
-     */
-    fun fetchProductivityAnalysis() {
+    fun generateAndStoreProductivityAnalysis() {
         viewModelScope.launch {
             _uiState.update { it.copy(isAnalysisLoading = true) }
             try {
@@ -320,31 +261,6 @@ class AIViewModel(
                 return AIViewModel(taskViewModel, habitViewModel, goalViewModel, focusViewModel) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
-        }
-    }
-
-    /**
-     * Generates a new productivity analysis, sends it to Gemini, and stores the result.
-     */
-    fun generateAndStoreProductivityAnalysis() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isAnalysisLoading = true, errorMessage = null) }
-
-            // 1. Gather all user data
-            val tasks = taskViewModel.tasks.value
-                        val savedAnalysis = SupabaseManager.client.postgrest["ai_productivity_analysis"]
-                            .upsert(analysisData, onConflict = "user_id") {
-                                select()
-                            }.decodeSingle<AIProductivityAnalysis>()
-                        _uiState.update { it.copy(productivityAnalysis = savedAnalysis, isAnalysisLoading = false) }
-                    } catch (e: Exception) {
-                         _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
-                    }
-                }
-                is GeminiResult.Error -> {
-                    _uiState.update { it.copy(errorMessage = result.message, isAnalysisLoading = false) }
-                }
-            }
         }
     }
 
