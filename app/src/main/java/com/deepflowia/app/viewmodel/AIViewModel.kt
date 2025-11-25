@@ -1,17 +1,17 @@
 package com.deepflowia.app.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.deepflowia.app.data.GeminiResult
 import com.deepflowia.app.data.GeminiService
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.*
-import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 enum class AIMode {
     DISCUSSION,
@@ -19,56 +19,75 @@ enum class AIMode {
     ANALYSE
 }
 
-data class ChatMessage(val message: String, val isUser: Boolean, val isLoading: Boolean = false)
 data class AIUiState(
-    val conversation: List<ChatMessage> = emptyList(),
-    val productivityAnalysis: AIProductivityAnalysis? = null,
-    val currentMode: AIMode = AIMode.DISCUSSION,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val conversation: List<ChatMessage> = emptyList(),
+    val currentMode: AIMode = AIMode.DISCUSSION,
+    val suggestedAction: SuggestedAction? = null,
+    val productivityAnalysis: AIProductivityAnalysis? = null,
+    val isAnalysisLoading: Boolean = false
 )
 
-class AIViewModel : ViewModel() {
+class AIViewModel(
+    private val taskViewModel: TaskViewModel = TaskViewModel(),
+    private val habitViewModel: HabitViewModel = HabitViewModel(),
+    private val goalViewModel: GoalViewModel = GoalViewModel(),
+    private val focusViewModel: FocusViewModel = FocusViewModel()
+) : ViewModel() {
+
+    private val geminiService = GeminiService()
 
     private val _uiState = MutableStateFlow(AIUiState())
     val uiState: StateFlow<AIUiState> = _uiState.asStateFlow()
 
-    fun setAIMode(mode: AIMode) {
-        _uiState.update { it.copy(currentMode = mode) }
+    init {
+        _uiState.update {
+            it.copy(
+                conversation = listOf(
+                    ChatMessage(
+                        text = "Bonjour ! Je suis votre assistant personnel. Comment puis-je vous aider aujourd'hui ?",
+                        isFromUser = false
+                    )
+                )
+            )
+        }
     }
 
-    fun sendMessage(message: String) {
-        val newUserMessage = ChatMessage(message, true)
-        val loadingMessage = ChatMessage("", false, isLoading = true)
-        _uiState.update { it.copy(conversation = it.conversation + newUserMessage + loadingMessage, isLoading = true) }
+    fun sendMessage(userMessage: String) {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null,
+                conversation = it.conversation + ChatMessage(text = userMessage, isFromUser = true)
+            )
+        }
 
         viewModelScope.launch {
-            val prompt = buildPrompt(message, _uiState.value.currentMode)
-            val modelName = when (_uiState.value.currentMode) {
-                AIMode.CREATION -> "gemini-1.5-pro"
-                AIMode.DISCUSSION, AIMode.ANALYSE -> "gemini-1.5-flash"
-            }
+            val prompt = buildPrompt(userMessage)
 
-            Log.d("AIViewModel", "Envoi de la requête à Gemini avec le modèle : $modelName")
-            val result = GeminiService.generateContent(prompt, modelName)
+            when (val result = geminiService.generateContent(prompt)) {
+                is GeminiResult.Success -> {
+                    val aiResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
+                    var suggestedAction: SuggestedAction? = null
 
-            _uiState.update { currentState ->
-                val currentConversation = currentState.conversation.dropLast(1) // Retire le message de chargement
-                when (result) {
-                    is GeminiResult.Success -> {
-                        val aiResponse = ChatMessage(result.responseText, false)
-                        currentState.copy(
-                            conversation = currentConversation + aiResponse,
-                            isLoading = false
+                    if (_uiState.value.currentMode == AIMode.CREATION) {
+                        suggestedAction = parseSuggestedAction(aiResponse)
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            conversation = it.conversation + ChatMessage(text = aiResponse, isFromUser = false),
+                            suggestedAction = suggestedAction
                         )
                     }
-                    is GeminiResult.Error -> {
-                        val errorMessage = "Erreur Gemini : ${result.errorMessage}"
-                        val aiErrorResponse = ChatMessage(errorMessage, false)
-                        currentState.copy(
-                            conversation = currentConversation + aiErrorResponse,
+                }
+                is GeminiResult.Error -> {
+                    _uiState.update {
+                        it.copy(
                             isLoading = false,
-                            errorMessage = errorMessage
+                            errorMessage = result.message
                         )
                     }
                 }
@@ -76,90 +95,148 @@ class AIViewModel : ViewModel() {
         }
     }
 
-    private suspend fun buildPrompt(message: String, mode: AIMode): String {
-        val user = SupabaseManager.client.auth.currentUserOrNull() ?: return "Utilisateur non authentifié. L'utilisateur a dit : $message"
-        return when (mode) {
-            AIMode.DISCUSSION -> "Réponds comme un coach en productivité amical et encourageant. Voici la question de l'utilisateur : $message"
-            AIMode.CREATION -> "Tu es un assistant expert en création de tâches. L'utilisateur veut créer quelque chose. Analyse sa demande et réponds UNIQUEMENT avec un JSON formaté pour créer l'objet (tâche, habitude, etc.). S'il manque des informations, demande-lui de clarifier. Voici sa demande : $message"
-            AIMode.ANALYSE -> {
-                val tasks = SupabaseManager.client.postgrest.from("tasks").select { filter { eq("user_id", user.id) } }.decodeList<Task>()
-                val habits = SupabaseManager.client.postgrest.from("habits").select { filter { eq("user_id", user.id) } }.decodeList<Habit>()
-                """
-                Analyse les données de productivité de l'utilisateur en te basant sur sa question.
-                Question de l'utilisateur : "$message"
-                Données de l'utilisateur :
-                - Tâches : ${Json.encodeToString(tasks)}
-                - Habitudes : ${Json.encodeToString(habits)}
-                Réponds de manière concise à sa question.
-                """.trimIndent()
+    fun confirmSuggestedAction() {
+        val action = _uiState.value.suggestedAction ?: return
+        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return
+
+        viewModelScope.launch {
+            when (action.type.lowercase()) {
+                "tâche", "task" -> {
+                    val newTask = Task(
+                        userId = userId,
+                        title = action.titre,
+                        description = action.details
+                    )
+                    taskViewModel.createTask(newTask)
+                }
+            }
+            _uiState.update {
+                it.copy(
+                    suggestedAction = null,
+                    conversation = it.conversation + ChatMessage(
+                        text = "Parfait, j'ai créé la tâche : '${action.titre}'.",
+                        isFromUser = false
+                    )
+                )
+            }
+        }
+    }
+
+    fun clearSuggestedAction() {
+        _uiState.update { it.copy(suggestedAction = null) }
+    }
+
+    fun setMode(newMode: AIMode) {
+        _uiState.update { it.copy(currentMode = newMode, suggestedAction = null) }
+        _uiState.update {
+            val modeText = when (newMode) {
+                AIMode.DISCUSSION -> "Mode Discussion activé. Comment puis-je vous aider à réfléchir ?"
+                AIMode.CREATION -> "Mode Création activé. Dites-moi ce que vous voulez créer (tâche, habitude...)."
+                AIMode.ANALYSE -> "Mode Analyse activé. Que souhaitez-vous analyser ?"
+            }
+            it.copy(conversation = it.conversation + ChatMessage(text = modeText, isFromUser = false))
+        }
+    }
+
+    fun fetchProductivityAnalysis() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isAnalysisLoading = true) }
+            try {
+                val result = SupabaseManager.client.postgrest["ai_productivity_analysis"]
+                    .select {
+                        order("created_at", Order.DESCENDING)
+                        limit(1)
+                    }.decodeSingleOrNull<AIProductivityAnalysis>()
+                _uiState.update { it.copy(productivityAnalysis = result, isAnalysisLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
             }
         }
     }
 
     fun generateAndStoreProductivityAnalysis() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
+            _uiState.update { it.copy(isAnalysisLoading = true, errorMessage = null) }
 
-            try {
-                val tasks = SupabaseManager.client.postgrest.from("tasks").select { filter { eq("user_id", user.id) } }.decodeList<Task>()
-                val habits = SupabaseManager.client.postgrest.from("habits").select { filter { eq("user_id", user.id) } }.decodeList<Habit>()
-                val goals = SupabaseManager.client.postgrest.from("goals").select { filter { eq("user_id", user.id) } }.decodeList<Goal>()
+            val tasks = taskViewModel.tasks.value
+            val habits = habitViewModel.filteredHabits.value
+            val goals = goalViewModel.filteredGoals.value
+            val sessions = focusViewModel.focusSessions.value
 
-                val prompt = """
-                    Analyse les données de productivité et fournis un rapport. Le rapport doit commencer par "SCORE: [nombre sur 100]", suivi d'une analyse et de recommandations.
-                    Exemple de début: "SCORE: 85 \n\nVoici votre analyse..."
-                    Données : Tâches=${Json.encodeToString(tasks)}, Habitudes=${Json.encodeToString(habits)}, Objectifs=${Json.encodeToString(goals)}
-                """.trimIndent()
+            val context = """
+                Données de l'utilisateur:
+                - Tâches (${tasks.size} au total, ${tasks.count { it.completed }} complétées}): ${tasks.take(10).joinToString { it.title }}
+                - Habitudes (${habits.size}): ${habits.take(10).joinToString { it.title }}
+                - Objectifs (${goals.size}): ${goals.take(10).joinToString { it.title }}
+                - Sessions de concentration (${sessions.size}): ${sessions.sumOf { it.duration }} minutes au total.
+            """.trimIndent()
 
-                Log.d("AIViewModel", "Envoi de la requête d'analyse à Gemini.")
-                val result = GeminiService.generateContent(prompt, "gemini-1.5-flash")
+            val prompt = """
+                Analysez les données de productivité suivantes pour un utilisateur.
+                Fournissez une analyse structurée en français.
+                Votre réponse DOIT commencer par 'SCORE: [un nombre entier entre 0 et 100]%' suivi d'un retour à la ligne.
+                Ensuite, incluez les sections 'RECOMMANDATIONS:' et 'INSIGHTS:'.
+                $context
+            """.trimIndent()
 
-                when (result) {
-                    is GeminiResult.Success -> {
-                        val analysisText = result.responseText
-                        val existingAnalysis = SupabaseManager.client.postgrest
-                            .from("ai_productivity_analysis")
-                            .select { filter { eq("user_id", user.id) } }
-                            .decodeSingleOrNull<AIProductivityAnalysis>()
-
-                        if (existingAnalysis != null) {
-                            SupabaseManager.client.postgrest.from("ai_productivity_analysis")
-                                .update({ set("analysis_data", analysisText) }) {
-                                    filter { eq("id", existingAnalysis.id!!) }
-                                }
-                        } else {
-                            val newAnalysis = AIProductivityAnalysis(userId = user.id, analysisData = analysisText)
-                            SupabaseManager.client.postgrest.from("ai_productivity_analysis").insert(newAnalysis)
-                        }
-                        fetchProductivityAnalysis()
-                    }
-                    is GeminiResult.Error -> {
-                        val errorMessage = "Erreur d'analyse Gemini : ${result.errorMessage}"
-                        _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+            when(val result = geminiService.generateContent(prompt)) {
+                is GeminiResult.Success -> {
+                    val analysisText = result.text ?: "L'analyse a échoué."
+                    val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
+                    val analysisData = AIProductivityAnalysis(
+                        userId = userId,
+                        analysisData = analysisText
+                    )
+                    try {
+                        val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
+                            .upsert(analysisData)
+                            .decodeSingle<AIProductivityAnalysis>()
+                        _uiState.update { it.copy(productivityAnalysis = savedAnalysis, isAnalysisLoading = false) }
+                    } catch (e: Exception) {
+                         _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
                     }
                 }
-
-            } catch (e: Exception) {
-                Log.e("AIViewModel", "Erreur lors de la génération de l'analyse", e)
-                _uiState.update { it.copy(errorMessage = "Erreur: ${e.message}", isLoading = false) }
+                is GeminiResult.Error -> {
+                    _uiState.update { it.copy(errorMessage = result.message, isAnalysisLoading = false) }
+                }
             }
         }
     }
 
-    fun fetchProductivityAnalysis() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
-            try {
-                val analysis = SupabaseManager.client.postgrest
-                    .from("ai_productivity_analysis").select { filter { eq("user_id", user.id) } }
-                    .decodeSingleOrNull<AIProductivityAnalysis>()
-                _uiState.update { it.copy(productivityAnalysis = analysis, isLoading = false) }
-            } catch (e: Exception) {
-                Log.e("AIViewModel", "Erreur lors de la récupération de l'analyse", e)
-                _uiState.update { it.copy(errorMessage = "Erreur: ${e.message}", isLoading = false) }
+    private fun buildPrompt(userMessage: String): String {
+        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise et utile."
+        var userDataContext = ""
+
+        val modeInstruction = when (_uiState.value.currentMode) {
+            AIMode.DISCUSSION -> "Mode actuel : Discussion. Aidez l'utilisateur à réfléchir et à trouver des idées."
+            AIMode.CREATION -> "Mode actuel : Création. Si l'utilisateur exprime une intention de créer une tâche, une habitude ou un objectif, répondez avec un format JSON simple comme `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\"}`. Sinon, discutez normalement."
+            AIMode.ANALYSE -> {
+                val tasks = taskViewModel.tasks.value
+                val habits = habitViewModel.filteredHabits.value
+
+                val taskSummary = "L'utilisateur a ${tasks.count()} tâches. ${tasks.count { it.completed }} sont terminées. Titres: ${tasks.take(5).joinToString { it.title }}."
+                val habitSummary = "L'utilisateur suit ${habits.count()} habitudes. Titres: ${habits.take(5).joinToString { it.title }}."
+
+                userDataContext = "Voici un résumé des données de l'utilisateur:\n- Tâches: $taskSummary\n- Habitudes: $habitSummary"
+                "Mode actuel : Analyse. Analysez les données fournies et répondez à la demande de l'utilisateur."
             }
+        }
+
+        return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    class AIViewModelFactory(
+        private val taskViewModel: TaskViewModel,
+        private val habitViewModel: HabitViewModel,
+        private val goalViewModel: GoalViewModel,
+        private val focusViewModel: FocusViewModel
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(AIViewModel::class.java)) {
+                return AIViewModel(taskViewModel, habitViewModel, goalViewModel, focusViewModel) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

@@ -1,23 +1,13 @@
 package com.deepflowia.app
 
 import android.app.Application
-import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
-
 class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-
-        // Configure et initialise Firebase avec la clé API Gemini
-        val options = FirebaseOptions.Builder()
-            .setApiKey(BuildConfig.GEMINI_API_KEY)
-            .setApplicationId(BuildConfig.APPLICATION_ID) // Assurez-vous que l'ID de l'application est disponible
-            .build()
-
-        try {
-            FirebaseApp.initializeApp(this, options)
-        } catch (e: IllegalStateException) {
-            // FirebaseApp est déjà initialisé, ce qui est normal dans certains scénarios.
-        }
+        // Firebase is now initialized automatically via its ContentProvider and google-services.json.
+        // The explicit, programmatic initialization has been removed to prevent conflicts
+        // and ensure that all Firebase services, including Authentication, work correctly.
+        // The Firebase AI SDK will automatically use the API key from the Firebase project
+        // defined in google-services.json.
     }
 }
