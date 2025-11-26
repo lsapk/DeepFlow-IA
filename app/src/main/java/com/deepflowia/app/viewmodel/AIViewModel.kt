@@ -5,14 +5,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.GeminiResult
 import com.deepflowia.app.data.GeminiService
-
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.*
-import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 
 // Represents the different modes for the AI assistant
 enum class AIMode {
@@ -39,6 +39,7 @@ class AIViewModel(
 ) : ViewModel() {
 
     private val geminiService = GeminiService()
+    private val json = Json { ignoreUnknownKeys = true }
 
     // Private MutableStateFlow to hold the UI state
     private val _uiState = MutableStateFlow(AIUiState())
@@ -140,29 +141,9 @@ class AIViewModel(
             }
             it.copy(conversation = it.conversation + ChatMessage(text = modeText, isFromUser = false))
         }
-
-        return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
     }
 
-    @Suppress("UNCHECKED_CAST")
-    class AIViewModelFactory(
-        private val taskViewModel: TaskViewModel,
-        private val habitViewModel: HabitViewModel,
-        private val goalViewModel: GoalViewModel,
-        private val focusViewModel: FocusViewModel
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(AIViewModel::class.java)) {
-                return AIViewModel(taskViewModel, habitViewModel, goalViewModel, focusViewModel) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
-        }
-    }
-
-    /**
-     * Generates a new productivity analysis, sends it to Gemini, and stores the result.
-     */
-    fun generateAndStoreProductivityAnalysis() {
+    fun fetchLatestProductivityAnalysis() {
         viewModelScope.launch {
             _uiState.update { it.copy(isAnalysisLoading = true) }
             try {
@@ -249,6 +230,25 @@ class AIViewModel(
         return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
     }
 
+    private fun parseSuggestedAction(responseText: String): SuggestedAction? {
+        return try {
+            // Extracts the JSON part from a markdown code block if present
+            val jsonString = if (responseText.contains("```json")) {
+                responseText.substringAfter("```json").substringBefore("```").trim()
+            } else {
+                responseText
+            }
+            if (jsonString.isNotBlank()) {
+                json.decodeFromString<SuggestedAction>(jsonString)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            // Log or handle exception if parsing fails
+            null
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     class AIViewModelFactory(
         private val taskViewModel: TaskViewModel,
@@ -262,34 +262,5 @@ class AIViewModel(
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
-    }
-
-    private fun buildPrompt(userMessage: String): String {
-        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise et utile."
-        var userDataContext = ""
-
-        val modeInstruction = when (_uiState.value.currentMode) {
-            AIMode.DISCUSSION -> "Mode actuel : Discussion. Aidez l'utilisateur à réfléchir et à trouver des idées."
-            AIMode.CREATION -> "Mode actuel : Création. Si l'utilisateur exprime une intention de créer une tâche, une habitude ou un objectif, répondez avec un format JSON simple comme `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\"}`. Sinon, discutez normalement."
-            AIMode.ANALYSE -> {
-
-                val tasks = taskViewModel.tasks.value
-                val habits = habitViewModel.filteredHabits.value
-
-                // Collect the latest data from the flows for context.
-                // This is a simplified snapshot. A more complex implementation might use combine.
-                val tasks = taskViewModel.tasks.value
-                val habits = habitViewModel.habits.value
-
-
-                val taskSummary = "L'utilisateur a ${tasks.count()} tâches. ${tasks.count { it.completed }} sont terminées. Titres: ${tasks.take(5).joinToString { it.title }}."
-                val habitSummary = "L'utilisateur suit ${habits.count()} habitudes. Titres: ${habits.take(5).joinToString { it.title }}."
-
-                userDataContext = "Voici un résumé des données de l'utilisateur:\n- Tâches: $taskSummary\n- Habitudes: $habitSummary"
-                "Mode actuel : Analyse. Analysez les données fournies et répondez à la demande de l'utilisateur."
-            }
-        }
-
-        return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
     }
 }
