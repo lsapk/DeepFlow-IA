@@ -1,10 +1,29 @@
 {
   "project_info": {
-    "project_number": "0",
-    "firebase_url": "",
-    "project_id": "",
-    "storage_bucket": ""
+    "project_number": "266687461150",
+    "project_id": "deepflow-83c9c",
+    "storage_bucket": "deepflow-83c9c.firebasestorage.app"
   },
-  "client": [],
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266687461150:android:5d89565226831136483b0f",
+        "android_client_info": {
+          "package_name": "com.deepflowia.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD28ZjFcdhqpQAKF4rBY_olCrVKtvXlftY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
   "configuration_version": "1"
 }

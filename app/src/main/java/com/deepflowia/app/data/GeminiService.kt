@@ -1,10 +1,11 @@
 package com.deepflowia.app.data
 
 import android.util.Log
-import com.google.firebase.ai.GenerativeBackend
+
 import com.google.firebase.ai.type.GenerateContentResponse
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.GenerativeBackend
 
 // Sealed class to represent the result of a Gemini API call
 sealed class GeminiResult {
