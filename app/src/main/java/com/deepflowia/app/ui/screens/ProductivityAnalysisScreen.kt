@@ -31,7 +31,7 @@ fun ProductivityAnalysisScreen(
 
     // Lancer la récupération des données à la première composition
     LaunchedEffect(Unit) {
-        aiViewModel.fetchProductivityAnalysis()
+        aiViewModel.fetchLatestProductivityAnalysis()
     }
 
     // Fonction d'aide pour extraire le score de la réponse de l'IA
