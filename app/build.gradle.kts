@@ -100,7 +100,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
 
     // Firebase AI
-    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
     implementation("com.google.firebase:firebase-ai")
 
 
