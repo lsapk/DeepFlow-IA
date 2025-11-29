@@ -10,9 +10,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.deepflowia.app.viewmodel.AIViewModel
-import com.deepflowia.app.viewmodel.AIMode
-
-import com.deepflowia.app.models.Task
 import com.deepflowia.app.viewmodel.FocusViewModel
 import com.deepflowia.app.viewmodel.GoalViewModel
 import com.deepflowia.app.viewmodel.HabitViewModel
@@ -25,9 +22,10 @@ import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
 import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
 import com.patrykandpatrick.vico.core.entry.entryOf
-import java.time.format.TextStyle
-import java.util.Locale
-import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,8 +107,7 @@ fun ProductivityAnalysisScreen(
             }
 
             item {
-                val tasks by taskViewModel.tasks.collectAsState()
-                ProductivityChart(tasks = tasks)
+                ProductivityChart()
             }
         }
     }
@@ -163,26 +160,23 @@ fun AnalysisCard(title: String, content: String) {
 }
 
 @Composable
-fun ProductivityChart(tasks: List<Task>) {
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-    val weekData = (0..6).map { dayIndex ->
-        val date = today.minus(dayIndex, DateTimeUnit.DAY)
-        val count = tasks.count { task ->
-            task.completed && task.updatedAt?.let {
-                Instant.parse(it).toLocalDateTime(TimeZone.UTC).date == date
-            } ?: false
-        }
-        entryOf(6 - dayIndex, count)
-    }
+fun ProductivityChart() {
+    // Données de démonstration pour le graphique
+    val chartEntryModelProducer = remember { ChartEntryModelProducer() }
 
-    val chartEntryModelProducer = ChartEntryModelProducer(weekData)
+    LaunchedEffect(Unit) {
+        // Simule des données pour les 7 derniers jours
+        val now = Clock.System.now()
+        val entries = (0..6).map { day ->
+            val date = LocalDate.now().minusDays(day.toLong())
+            entryOf(date.toEpochDay().toFloat(), Random.nextInt(20, 101))
+        }.reversed()
+        chartEntryModelProducer.setEntries(entries)
+    }
 
     val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-        val daysAgo = 6 - value.toInt()
-        val date = today.minus(daysAgo, DateTimeUnit.DAY)
-        date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.FRENCH)
+        LocalDate.ofEpochDay(value.toLong()).format(DateTimeFormatter.ofPattern("d MMM"))
     }
-
 
     Card(
         modifier = Modifier
@@ -191,20 +185,14 @@ fun ProductivityChart(tasks: List<Task>) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Tâches complétées (7 derniers jours)", style = MaterialTheme.typography.titleMedium)
+            Text("Productivité des 7 derniers jours", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            if (weekData.any { it.y > 0 }) {
-                 Chart(
-                    chart = columnChart(),
-                    chartModelProducer = chartEntryModelProducer,
-                    startAxis = rememberStartAxis(),
-                    bottomAxis = rememberBottomAxis(valueFormatter = bottomAxisValueFormatter),
-                )
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Aucune donnée de tâche pour la semaine.")
-                }
-            }
+            Chart(
+                chart = columnChart(),
+                chartModelProducer = chartEntryModelProducer,
+                startAxis = rememberStartAxis(),
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomAxisValueFormatter),
+            )
         }
     }
 }
