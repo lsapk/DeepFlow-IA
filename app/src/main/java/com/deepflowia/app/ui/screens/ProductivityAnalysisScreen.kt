@@ -12,10 +12,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.deepflowia.app.viewmodel.AIViewModel
 import com.deepflowia.app.viewmodel.AIMode
 
+import com.deepflowia.app.models.Task
 import com.deepflowia.app.viewmodel.FocusViewModel
 import com.deepflowia.app.viewmodel.GoalViewModel
 import com.deepflowia.app.viewmodel.HabitViewModel
 import com.deepflowia.app.viewmodel.TaskViewModel
+import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
+import com.patrykandpatrick.vico.compose.chart.Chart
+import com.patrykandpatrick.vico.compose.chart.column.columnChart
+import com.patrykandpatrick.vico.core.axis.AxisPosition
+import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
+import com.patrykandpatrick.vico.core.entry.entryOf
+import java.time.format.TextStyle
+import java.util.Locale
+import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,16 +44,6 @@ fun ProductivityAnalysisScreen(
     // Lancer la récupération des données à la première composition
     LaunchedEffect(Unit) {
         aiViewModel.fetchLatestProductivityAnalysis()
-    }
-
-    // Fonction d'aide pour extraire le score de la réponse de l'IA
-    val productivityScore = remember(uiState.productivityAnalysis) {
-        val analysisText = uiState.productivityAnalysis?.analysisData ?: ""
-        if (analysisText.startsWith("SCORE:")) {
-            analysisText.substringAfter("SCORE:").trim().split(" ")[0].toIntOrNull() ?: 0
-        } else {
-            0
-        }
     }
 
     Scaffold(
@@ -64,21 +66,38 @@ fun ProductivityAnalysisScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Button(onClick = { aiViewModel.generateAndStoreProductivityAnalysis() }) {
-                    Text("Générer/Mettre à jour l'analyse")
+                Button(
+                    onClick = { aiViewModel.generateAndStoreProductivityAnalysis() },
+                    enabled = !uiState.isAnalysisLoading
+                ) {
+                    if (uiState.isAnalysisLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Générer/Mettre à jour l'analyse")
+                    }
                 }
             }
 
-            item {
-                ProductivityScoreCard(score = productivityScore)
-            }
-
-            item {
-                AnalysisCard(
-                    title = "Analyse et Recommandations",
-                    content = uiState.productivityAnalysis?.analysisData
-                        ?: "Aucune analyse disponible. Cliquez sur le bouton pour en générer une."
-                )
+            if (uiState.parsedAnalysis != null) {
+                item {
+                    ProductivityScoreCard(score = uiState.parsedAnalysis!!.score)
+                }
+                item {
+                    AnalysisCard(
+                        title = "Recommandations",
+                        content = uiState.parsedAnalysis!!.recommendations
+                    )
+                }
+                item {
+                    AnalysisCard(
+                        title = "Insights",
+                        content = uiState.parsedAnalysis!!.insights
+                    )
+                }
+            } else if (!uiState.isAnalysisLoading) {
+                item {
+                    Text("Aucune analyse disponible. Cliquez sur le bouton pour en générer une.")
+                }
             }
 
             item {
@@ -90,7 +109,8 @@ fun ProductivityAnalysisScreen(
             }
 
             item {
-                GraphPlaceholder()
+                val tasks by taskViewModel.tasks.collectAsState()
+                ProductivityChart(tasks = tasks)
             }
         }
     }
@@ -143,21 +163,48 @@ fun AnalysisCard(title: String, content: String) {
 }
 
 @Composable
-fun GraphPlaceholder() {
+fun ProductivityChart(tasks: List<Task>) {
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    val weekData = (0..6).map { dayIndex ->
+        val date = today.minus(dayIndex, DateTimeUnit.DAY)
+        val count = tasks.count { task ->
+            task.completed && task.updatedAt?.let {
+                Instant.parse(it).toLocalDateTime(TimeZone.UTC).date == date
+            } ?: false
+        }
+        entryOf(6 - dayIndex, count)
+    }
+
+    val chartEntryModelProducer = ChartEntryModelProducer(weekData)
+
+    val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+        val daysAgo = 6 - value.toInt()
+        val date = today.minus(daysAgo, DateTimeUnit.DAY)
+        date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.FRENCH)
+    }
+
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(250.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "Graphiques à venir (ex: Vico)",
-                style = MaterialTheme.typography.bodyLarge
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Tâches complétées (7 derniers jours)", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            if (weekData.any { it.y > 0 }) {
+                 Chart(
+                    chart = columnChart(),
+                    chartModelProducer = chartEntryModelProducer,
+                    startAxis = rememberStartAxis(),
+                    bottomAxis = rememberBottomAxis(valueFormatter = bottomAxisValueFormatter),
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Aucune donnée de tâche pour la semaine.")
+                }
+            }
         }
     }
 }

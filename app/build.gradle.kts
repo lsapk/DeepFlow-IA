@@ -114,4 +114,8 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Vico Charts
+    implementation("com.patrykandpatrick.vico:compose:2.3.6")
+    implementation("com.patrykandpatrick.vico:compose-m3:2.3.6")
 }
