@@ -1,13 +1,21 @@
 package com.deepflowia.app
 
 import android.app.Application
+import com.google.firebase.Firebase
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import com.google.firebase.initialize
+
 class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        // Firebase is now initialized automatically via its ContentProvider and google-services.json.
-        // The explicit, programmatic initialization has been removed to prevent conflicts
-        // and ensure that all Firebase services, including Authentication, work correctly.
-        // The Firebase AI SDK will automatically use the API key from the Firebase project
-        // defined in google-services.json.
+        // Initialize Firebase
+        Firebase.initialize(context = this)
+
+        // Initialize App Check
+        val firebaseAppCheck = FirebaseAppCheck.getInstance()
+        firebaseAppCheck.installAppCheckProviderFactory(
+            PlayIntegrityAppCheckProviderFactory.getInstance()
+        )
     }
 }
