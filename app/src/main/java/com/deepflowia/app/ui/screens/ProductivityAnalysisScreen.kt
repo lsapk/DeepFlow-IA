@@ -10,12 +10,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.deepflowia.app.viewmodel.AIViewModel
-import com.deepflowia.app.viewmodel.AIMode
-
 import com.deepflowia.app.viewmodel.FocusViewModel
 import com.deepflowia.app.viewmodel.GoalViewModel
 import com.deepflowia.app.viewmodel.HabitViewModel
 import com.deepflowia.app.viewmodel.TaskViewModel
+import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
+import com.patrykandpatrick.vico.compose.chart.Chart
+import com.patrykandpatrick.vico.compose.chart.column.columnChart
+import com.patrykandpatrick.vico.core.axis.AxisPosition
+import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
+import com.patrykandpatrick.vico.core.entry.entryOf
+import kotlinx.datetime.Clock
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,7 +100,7 @@ fun ProductivityAnalysisScreen(
             }
 
             item {
-                GraphPlaceholder()
+                ProductivityChart()
             }
         }
     }
@@ -143,20 +153,38 @@ fun AnalysisCard(title: String, content: String) {
 }
 
 @Composable
-fun GraphPlaceholder() {
+fun ProductivityChart() {
+    // Données de démonstration pour le graphique
+    val chartEntryModelProducer = remember { ChartEntryModelProducer() }
+
+    LaunchedEffect(Unit) {
+        // Simule des données pour les 7 derniers jours
+        val now = Clock.System.now()
+        val entries = (0..6).map { day ->
+            val date = LocalDate.now().minusDays(day.toLong())
+            entryOf(date.toEpochDay().toFloat(), Random.nextInt(20, 101))
+        }.reversed()
+        chartEntryModelProducer.setEntries(entries)
+    }
+
+    val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
+        LocalDate.ofEpochDay(value.toLong()).format(DateTimeFormatter.ofPattern("d MMM"))
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(250.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "Graphiques à venir (ex: Vico)",
-                style = MaterialTheme.typography.bodyLarge
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Productivité des 7 derniers jours", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Chart(
+                chart = columnChart(),
+                chartModelProducer = chartEntryModelProducer,
+                startAxis = rememberStartAxis(),
+                bottomAxis = rememberBottomAxis(valueFormatter = bottomAxisValueFormatter),
             )
         }
     }
