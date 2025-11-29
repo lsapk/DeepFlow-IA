@@ -44,16 +44,6 @@ fun ProductivityAnalysisScreen(
         aiViewModel.fetchLatestProductivityAnalysis()
     }
 
-    // Fonction d'aide pour extraire le score de la réponse de l'IA
-    val productivityScore = remember(uiState.productivityAnalysis) {
-        val analysisText = uiState.productivityAnalysis?.analysisData ?: ""
-        if (analysisText.startsWith("SCORE:")) {
-            analysisText.substringAfter("SCORE:").trim().split(" ")[0].toIntOrNull() ?: 0
-        } else {
-            0
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -74,21 +64,38 @@ fun ProductivityAnalysisScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Button(onClick = { aiViewModel.generateAndStoreProductivityAnalysis() }) {
-                    Text("Générer/Mettre à jour l'analyse")
+                Button(
+                    onClick = { aiViewModel.generateAndStoreProductivityAnalysis() },
+                    enabled = !uiState.isAnalysisLoading
+                ) {
+                    if (uiState.isAnalysisLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Générer/Mettre à jour l'analyse")
+                    }
                 }
             }
 
-            item {
-                ProductivityScoreCard(score = productivityScore)
-            }
-
-            item {
-                AnalysisCard(
-                    title = "Analyse et Recommandations",
-                    content = uiState.productivityAnalysis?.analysisData
-                        ?: "Aucune analyse disponible. Cliquez sur le bouton pour en générer une."
-                )
+            if (uiState.parsedAnalysis != null) {
+                item {
+                    ProductivityScoreCard(score = uiState.parsedAnalysis!!.score)
+                }
+                item {
+                    AnalysisCard(
+                        title = "Recommandations",
+                        content = uiState.parsedAnalysis!!.recommendations
+                    )
+                }
+                item {
+                    AnalysisCard(
+                        title = "Insights",
+                        content = uiState.parsedAnalysis!!.insights
+                    )
+                }
+            } else if (!uiState.isAnalysisLoading) {
+                item {
+                    Text("Aucune analyse disponible. Cliquez sur le bouton pour en générer une.")
+                }
             }
 
             item {

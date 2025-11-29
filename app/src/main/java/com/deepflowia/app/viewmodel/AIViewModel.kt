@@ -21,13 +21,20 @@ enum class AIMode {
     ANALYSE     // Analyze user's productivity data
 }
 
+data class ParsedAnalysisResult(
+    val score: Int = 0,
+    val recommendations: String = "",
+    val insights: String = ""
+)
+
 data class AIUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val conversation: List<ChatMessage> = emptyList(),
     val currentMode: AIMode = AIMode.DISCUSSION,
     val suggestedAction: SuggestedAction? = null,
-    val productivityAnalysis: AIProductivityAnalysis? = null,
+    val productivityAnalysis: AIProductivityAnalysis? = null, // The raw data from DB
+    val parsedAnalysis: ParsedAnalysisResult? = null, // The parsed result for UI
     val isAnalysisLoading: Boolean = false
 )
 
@@ -152,7 +159,13 @@ class AIViewModel(
                         order("created_at", Order.DESCENDING)
                         limit(1)
                     }.decodeSingleOrNull<AIProductivityAnalysis>()
-                _uiState.update { it.copy(productivityAnalysis = result, isAnalysisLoading = false) }
+
+                val parsedResult = result?.analysisData?.let { parseAnalysis(it) }
+                _uiState.update { it.copy(
+                    productivityAnalysis = result,
+                    parsedAnalysis = parsedResult,
+                    isAnalysisLoading = false
+                ) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
             }
@@ -196,7 +209,13 @@ class AIViewModel(
                         val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
                             .upsert(analysisData)
                             .decodeSingle<AIProductivityAnalysis>()
-                        _uiState.update { it.copy(productivityAnalysis = savedAnalysis, isAnalysisLoading = false) }
+
+                        val parsedResult = parseAnalysis(savedAnalysis.analysisData)
+                        _uiState.update { it.copy(
+                            productivityAnalysis = savedAnalysis,
+                            parsedAnalysis = parsedResult,
+                            isAnalysisLoading = false
+                        ) }
                     } catch (e: Exception) {
                          _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
                     }
@@ -205,6 +224,17 @@ class AIViewModel(
                     _uiState.update { it.copy(errorMessage = result.message, isAnalysisLoading = false) }
                 }
             }
+        }
+    }
+
+    private fun parseAnalysis(analysisText: String): ParsedAnalysisResult {
+        try {
+            val score = analysisText.substringAfter("SCORE:").substringBefore("%").trim().toIntOrNull() ?: 0
+            val recommendations = analysisText.substringAfter("RECOMMANDATIONS:").substringBefore("INSIGHTS:").trim()
+            val insights = analysisText.substringAfter("INSIGHTS:").trim()
+            return ParsedAnalysisResult(score, recommendations, insights)
+        } catch (e: Exception) {
+            return ParsedAnalysisResult() // Return default/empty result on parsing error
         }
     }
 
