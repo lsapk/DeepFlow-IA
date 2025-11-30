@@ -100,8 +100,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
 
     // Vico Charts
-    implementation("com.patrykandpatrick.vico:compose-m3:2.0.0-alpha.22")
-    implementation("com.patrykandpatrick.vico:core:2.0.0-alpha.22")
+    implementation("com.patrykandpatrick.vico:core:2.3.6")
+    implementation("com.patrykandpatrick.vico:compose:2.3.6")
+    implementation("com.patrykandpatrick.vico:compose-m3:2.3.6")
 
     // Firebase AI
     implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
@@ -120,7 +121,4 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    // Vico Charts
-    implementation("com.patrykandpatrick.vico:compose:2.3.6")
-    implementation("com.patrykandpatrick.vico:compose-m3:2.3.6")
 }

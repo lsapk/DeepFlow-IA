@@ -20,6 +20,7 @@ import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.column.columnChart
 import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
+import com.patrykandpatrick.vico.compose.chart.entry.rememberChartEntryModelProducer
 import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
 import com.patrykandpatrick.vico.core.entry.entryOf
 import kotlinx.datetime.Clock
@@ -162,11 +163,10 @@ fun AnalysisCard(title: String, content: String) {
 @Composable
 fun ProductivityChart() {
     // Données de démonstration pour le graphique
-    val chartEntryModelProducer = remember { ChartEntryModelProducer() }
+    val chartEntryModelProducer = rememberChartEntryModelProducer()
 
     LaunchedEffect(Unit) {
         // Simule des données pour les 7 derniers jours
-        val now = Clock.System.now()
         val entries = (0..6).map { day ->
             val date = LocalDate.now().minusDays(day.toLong())
             entryOf(date.toEpochDay().toFloat(), Random.nextInt(20, 101))
