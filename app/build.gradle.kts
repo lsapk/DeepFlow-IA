@@ -99,10 +99,6 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
 
-    // Vico Charts
-    implementation("com.patrykandpatrick.vico:core:2.3.6")
-    implementation("com.patrykandpatrick.vico:compose:2.3.6")
-    implementation("com.patrykandpatrick.vico:compose-m3:2.3.6")
 
     // Firebase AI
     implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
