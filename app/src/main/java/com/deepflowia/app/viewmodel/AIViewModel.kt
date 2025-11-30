@@ -192,6 +192,7 @@ class AIViewModel(
             val prompt = """
                 Analysez les données de productivité suivantes pour un utilisateur.
                 Fournissez une analyse structurée en français.
+                **Utilisez le format Markdown et des emojis pour rendre l'analyse plus claire et engageante.**
                 Votre réponse DOIT commencer par 'SCORE: [un nombre entier entre 0 et 100]%' suivi d'un retour à la ligne.
                 Ensuite, incluez les sections 'RECOMMANDATIONS:' et 'INSIGHTS:'.
                 $context
@@ -199,25 +200,33 @@ class AIViewModel(
 
             when(val result = geminiService.generateContent(prompt)) {
                 is GeminiResult.Success -> {
-                    val analysisText = result.text ?: "L'analyse a échoué."
-                    val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
-                    val analysisData = AIProductivityAnalysis(
-                        userId = userId,
-                        analysisData = analysisText
-                    )
-                    try {
-                        val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
-                            .upsert(analysisData)
-                            .decodeSingle<AIProductivityAnalysis>()
+                    val analysisText = result.text ?: "L'analyse a échoué, veuillez réessayer."
+                    val parsedResult = parseAnalysis(analysisText)
 
-                        val parsedResult = parseAnalysis(savedAnalysis.analysisData)
-                        _uiState.update { it.copy(
-                            productivityAnalysis = savedAnalysis,
-                            parsedAnalysis = parsedResult,
-                            isAnalysisLoading = false
-                        ) }
+                    // Mettre à jour l'UI immédiatement avec le résultat parsé
+                    _uiState.update { it.copy(
+                        parsedAnalysis = parsedResult,
+                        isAnalysisLoading = false
+                    ) }
+
+                    // Essayer d'enregistrer le résultat dans Supabase en arrière-plan
+                    try {
+                        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+                        if (userId != null) {
+                            val analysisData = AIProductivityAnalysis(
+                                userId = userId,
+                                analysisData = analysisText
+                            )
+                            val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
+                                .upsert(analysisData)
+                                .decodeSingle<AIProductivityAnalysis>()
+                            // Mettre à jour l'état avec les données sauvegardées (facultatif, car l'UI a déjà le résultat)
+                             _uiState.update { it.copy(productivityAnalysis = savedAnalysis) }
+                        }
                     } catch (e: Exception) {
-                         _uiState.update { it.copy(errorMessage = e.message, isAnalysisLoading = false) }
+                        // L'enregistrement a échoué, mais l'utilisateur a déjà vu le résultat.
+                        // On pourrait logger cette erreur discrètement.
+                        println("Échec de la sauvegarde de l'analyse: ${e.message}")
                     }
                 }
                 is GeminiResult.Error -> {
@@ -239,7 +248,7 @@ class AIViewModel(
     }
 
     private fun buildPrompt(userMessage: String): String {
-        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise et utile."
+        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise et utile. **Formatez toujours votre réponse en Markdown et utilisez des emojis pertinents pour améliorer la lisibilité.**"
         var userDataContext = ""
 
         val modeInstruction = when (_uiState.value.currentMode) {
