@@ -82,6 +82,10 @@ fun AIScreen(
                     currentMode = uiState.currentMode,
                     onModeSelected = { aiViewModel.setMode(it) }
                 )
+                DataAccessSwitch(
+                    canAccessData = uiState.canAccessData,
+                    onCheckedChange = { aiViewModel.setCanAccessData(it) }
+                )
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -124,6 +128,25 @@ fun ModeSelector(currentMode: AIMode, onModeSelected: (AIMode) -> Unit) {
     }
 }
 
+@Composable
+fun DataAccessSwitch(
+    canAccessData: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text("Autoriser l'IA à accéder à vos données", modifier = Modifier.weight(1f))
+        Switch(
+            checked = canAccessData,
+            onCheckedChange = onCheckedChange
+        )
+    }
+}
 
 @Composable
 fun MessageBubble(message: ChatMessage) {

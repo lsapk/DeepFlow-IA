@@ -36,7 +36,8 @@ data class AIUiState(
     val productivityAnalysis: AIProductivityAnalysis? = null, // The raw data from DB
     val parsedAnalysis: ParsedAnalysisResult? = null, // The parsed result for UI
     val isAnalysisLoading: Boolean = false,
-    val personalityProfile: AIPersonalityProfile? = null
+    val personalityProfile: AIPersonalityProfile? = null,
+    val canAccessData: Boolean = true
 )
 
 class AIViewModel(
@@ -158,7 +159,9 @@ class AIViewModel(
 
             when (val result = geminiService.generateContent(prompt)) {
                 is GeminiResult.Success -> {
-                    val aiResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
+                    val rawResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
+                    // Clean up any remaining markdown asterisks, just in case.
+                    val aiResponse = rawResponse.replace(Regex("\\*\\*?"), "")
                     var suggestedAction: SuggestedAction? = null
 
                     if (_uiState.value.currentMode == AIMode.CREATION) {
@@ -226,6 +229,10 @@ class AIViewModel(
             }
             it.copy(conversation = it.conversation + ChatMessage(text = modeText, isFromUser = false))
         }
+    }
+
+    fun setCanAccessData(canAccess: Boolean) {
+        _uiState.update { it.copy(canAccessData = canAccess) }
     }
 
     fun fetchLatestProductivityAnalysis() {
@@ -327,26 +334,30 @@ class AIViewModel(
     }
 
     private fun buildPrompt(userMessage: String): String {
-        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise et utile. **Formatez toujours votre réponse en Markdown et utilisez des emojis pertinents pour améliorer la lisibilité.**"
+        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise, utile et conversationnelle. N'utilisez pas de Markdown ou de formatage spécial."
         var userDataContext = ""
+
+        if (_uiState.value.canAccessData) {
+            val tasks = taskViewModel.tasks.value
+            val habits = habitViewModel.filteredHabits.value
+            val goals = goalViewModel.filteredGoals.value
+
+            val taskSummary = tasks.joinToString(", ") { it.title }
+            val habitSummary = habits.joinToString(", ") { it.title }
+            val goalSummary = goals.joinToString(", ") { it.title }
+
+            userDataContext = """
+                Voici les données actuelles de l'utilisateur pour vous donner du contexte. Utilisez ces informations pour personnaliser votre réponse.
+                - Tâches en cours: $taskSummary
+                - Habitudes suivies: $habitSummary
+                - Objectifs visés: $goalSummary
+            """.trimIndent()
+        }
 
         val modeInstruction = when (_uiState.value.currentMode) {
             AIMode.DISCUSSION -> "Mode actuel : Discussion. Aidez l'utilisateur à réfléchir et à trouver des idées."
             AIMode.CREATION -> "Mode actuel : Création. Si l'utilisateur exprime une intention de créer une tâche, une habitude ou un objectif, répondez avec un format JSON simple comme `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\"}`. Sinon, discutez normalement."
-            AIMode.ANALYSE -> {
-                val tasks = taskViewModel.tasks.value
-                val habits = habitViewModel.filteredHabits.value
-                val goals = goalViewModel.filteredGoals.value
-                val sessions = focusViewModel.focusSessions.value
-
-                val taskSummary = "L'utilisateur a ${tasks.count()} tâches (${tasks.count { it.completed }} terminées)."
-                val habitSummary = "L'utilisateur suit ${habits.count()} habitudes."
-                val goalSummary = "L'utilisateur a ${goals.count()} objectifs en cours."
-                val sessionSummary = "L'utilisateur a enregistré ${sessions.count()} sessions de concentration."
-
-                userDataContext = "Voici un résumé des données de l'utilisateur:\n- Tâches: $taskSummary\n- Habitudes: $habitSummary\n- Objectifs: $goalSummary\n- Sessions de concentration: $sessionSummary"
-                "Mode actuel : Analyse. Analysez les données fournies et répondez à la demande de l'utilisateur."
-            }
+            AIMode.ANALYSE -> "Mode actuel : Analyse. Analysez les données fournies (si l'accès est autorisé) et répondez à la demande de l'utilisateur."
         }
 
         return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
