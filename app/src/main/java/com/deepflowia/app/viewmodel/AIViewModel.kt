@@ -160,7 +160,8 @@ class AIViewModel(
             when (val result = geminiService.generateContent(prompt)) {
                 is GeminiResult.Success -> {
                     val rawResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
-                    val aiResponse = rawResponse.replace("*", "")
+                    // Clean up any remaining markdown asterisks, just in case.
+                    val aiResponse = rawResponse.replace(Regex("\\*\\*?"), "")
                     var suggestedAction: SuggestedAction? = null
 
                     if (_uiState.value.currentMode == AIMode.CREATION) {
@@ -333,28 +334,30 @@ class AIViewModel(
     }
 
     private fun buildPrompt(userMessage: String): String {
-        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise et utile. **Formatez toujours votre réponse en Markdown et utilisez des emojis pertinents pour améliorer la lisibilité.**"
+        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise, utile et conversationnelle. N'utilisez pas de Markdown ou de formatage spécial."
         var userDataContext = ""
 
-        // Only include user data if permission is granted
         if (_uiState.value.canAccessData) {
             val tasks = taskViewModel.tasks.value
             val habits = habitViewModel.filteredHabits.value
             val goals = goalViewModel.filteredGoals.value
-            val sessions = focusViewModel.focusSessions.value
 
-            val taskSummary = "L'utilisateur a ${tasks.count()} tâches (${tasks.count { it.completed }} terminées)."
-            val habitSummary = "L'utilisateur suit ${habits.count()} habitudes. Exemples : ${habits.take(3).joinToString { it.title }}."
-            val goalSummary = "L'utilisateur a ${goals.count()} objectifs en cours. Exemples : ${goals.take(3).joinToString { it.title }}."
-            val sessionSummary = "L'utilisateur a enregistré ${sessions.count()} sessions de concentration."
+            val taskSummary = tasks.joinToString(", ") { it.title }
+            val habitSummary = habits.joinToString(", ") { it.title }
+            val goalSummary = goals.joinToString(", ") { it.title }
 
-            userDataContext = "Voici un résumé des données de l'utilisateur pour contextualiser la conversation:\n- Tâches: $taskSummary\n- Habitudes: $habitSummary\n- Objectifs: $goalSummary\n- Sessions de concentration: $sessionSummary"
+            userDataContext = """
+                Voici les données actuelles de l'utilisateur pour vous donner du contexte. Utilisez ces informations pour personnaliser votre réponse.
+                - Tâches en cours: $taskSummary
+                - Habitudes suivies: $habitSummary
+                - Objectifs visés: $goalSummary
+            """.trimIndent()
         }
 
         val modeInstruction = when (_uiState.value.currentMode) {
             AIMode.DISCUSSION -> "Mode actuel : Discussion. Aidez l'utilisateur à réfléchir et à trouver des idées."
             AIMode.CREATION -> "Mode actuel : Création. Si l'utilisateur exprime une intention de créer une tâche, une habitude ou un objectif, répondez avec un format JSON simple comme `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\"}`. Sinon, discutez normalement."
-            AIMode.ANALYSE -> "Mode actuel : Analyse. Analysez les données fournies si disponibles et répondez à la demande de l'utilisateur."
+            AIMode.ANALYSE -> "Mode actuel : Analyse. Analysez les données fournies (si l'accès est autorisé) et répondez à la demande de l'utilisateur."
         }
 
         return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
