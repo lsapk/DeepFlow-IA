@@ -35,7 +35,8 @@ data class AIUiState(
     val suggestedAction: SuggestedAction? = null,
     val productivityAnalysis: AIProductivityAnalysis? = null, // The raw data from DB
     val parsedAnalysis: ParsedAnalysisResult? = null, // The parsed result for UI
-    val isAnalysisLoading: Boolean = false
+    val isAnalysisLoading: Boolean = false,
+    val personalityProfile: AIPersonalityProfile? = null
 )
 
 class AIViewModel(
@@ -63,6 +64,81 @@ class AIViewModel(
                     )
                 )
             )
+        }
+        fetchPersonalityProfile()
+        }
+    }
+
+    fun fetchPersonalityProfile() {
+        viewModelScope.launch {
+            try {
+                val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
+                val result = SupabaseManager.client.postgrest["ai_personality_profiles"]
+                    .select {
+                        filter("user_id", "eq", userId)
+                        order("updated_at", Order.DESCENDING)
+                        limit(1)
+                    }.decodeSingleOrNull<AIPersonalityProfile>()
+                _uiState.update { it.copy(personalityProfile = result) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Erreur de chargement du profil IA: ${e.message}") }
+            }
+        }
+    }
+
+    fun generateAndStorePersonalityProfile() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val tasks = taskViewModel.tasks.value
+            val habits = habitViewModel.filteredHabits.value
+            val goals = goalViewModel.filteredGoals.value
+            val sessions = focusViewModel.focusSessions.value
+
+            val context = """
+                Données de l'utilisateur:
+                - Tâches: ${tasks.size} au total, ${tasks.count { it.completed }} complétées.
+                - Habitudes: ${habits.size} suivies.
+                - Objectifs: ${goals.size} en cours.
+                - Sessions de concentration: ${sessions.size} sessions, pour un total de ${sessions.sumOf { it.duration }} minutes.
+            """.trimIndent()
+
+            val prompt = """
+                En tant que coach en productivité, analysez les données suivantes pour définir le profil de productivité de l'utilisateur.
+                Le profil doit être un titre court et percutant (ex: "Le Planificateur Méticuleux", "L'Accomplisseur Focalisé", "Le Sprinteur Créatif")
+                suivi d'une brève description (2-3 phrases).
+                Votre réponse DOIT être uniquement au format JSON, comme ceci :
+                `{"titre": "...", "description": "..."}`
+
+                Voici les données :
+                $context
+            """.trimIndent()
+
+            when(val result = geminiService.generateContent(prompt)) {
+                is GeminiResult.Success -> {
+                    val profileJson = result.text ?: "{}"
+                    try {
+                        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+                        if (userId != null) {
+                            val newProfile = AIPersonalityProfile(
+                                userId = userId,
+                                profileData = profileJson
+                            )
+                            val savedProfile = SupabaseManager.client.postgrest.from("ai_personality_profiles")
+                                .upsert(newProfile, onConflict = "user_id")
+                                .decodeSingle<AIPersonalityProfile>()
+                            _uiState.update { it.copy(personalityProfile = savedProfile, isLoading = false) }
+                        } else {
+                            _uiState.update { it.copy(errorMessage = "Utilisateur non trouvé.", isLoading = false) }
+                        }
+                    } catch (e: Exception) {
+                        _uiState.update { it.copy(errorMessage = "Erreur lors de la sauvegarde du profil : ${e.message}", isLoading = false) }
+                    }
+                }
+                is GeminiResult.Error -> {
+                    _uiState.update { it.copy(errorMessage = result.message, isLoading = false) }
+                }
+            }
         }
     }
 
@@ -192,9 +268,10 @@ class AIViewModel(
             val prompt = """
                 Analysez les données de productivité suivantes pour un utilisateur.
                 Fournissez une analyse structurée en français.
-                **Utilisez le format Markdown et des emojis pour rendre l'analyse plus claire et engageante.**
+                **Utilisez impérativement le format Markdown et des emojis pour rendre l'analyse plus claire et engageante.**
                 Votre réponse DOIT commencer par 'SCORE: [un nombre entier entre 0 et 100]%' suivi d'un retour à la ligne.
                 Ensuite, incluez les sections 'RECOMMANDATIONS:' et 'INSIGHTS:'.
+                **Dans ces sections, chaque point doit être une liste à puces (commençant par - ou *).**
                 $context
             """.trimIndent()
 
@@ -257,11 +334,15 @@ class AIViewModel(
             AIMode.ANALYSE -> {
                 val tasks = taskViewModel.tasks.value
                 val habits = habitViewModel.filteredHabits.value
+                val goals = goalViewModel.filteredGoals.value
+                val sessions = focusViewModel.focusSessions.value
 
-                val taskSummary = "L'utilisateur a ${tasks.count()} tâches. ${tasks.count { it.completed }} sont terminées. Titres: ${tasks.take(5).joinToString { it.title }}."
-                val habitSummary = "L'utilisateur suit ${habits.count()} habitudes. Titres: ${habits.take(5).joinToString { it.title }}."
+                val taskSummary = "L'utilisateur a ${tasks.count()} tâches (${tasks.count { it.completed }} terminées)."
+                val habitSummary = "L'utilisateur suit ${habits.count()} habitudes."
+                val goalSummary = "L'utilisateur a ${goals.count()} objectifs en cours."
+                val sessionSummary = "L'utilisateur a enregistré ${sessions.count()} sessions de concentration."
 
-                userDataContext = "Voici un résumé des données de l'utilisateur:\n- Tâches: $taskSummary\n- Habitudes: $habitSummary"
+                userDataContext = "Voici un résumé des données de l'utilisateur:\n- Tâches: $taskSummary\n- Habitudes: $habitSummary\n- Objectifs: $goalSummary\n- Sessions de concentration: $sessionSummary"
                 "Mode actuel : Analyse. Analysez les données fournies et répondez à la demande de l'utilisateur."
             }
         }
