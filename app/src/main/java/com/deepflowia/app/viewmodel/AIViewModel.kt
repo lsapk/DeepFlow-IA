@@ -75,7 +75,9 @@ class AIViewModel(
                 val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
                 val result = SupabaseManager.client.postgrest["ai_personality_profiles"]
                     .select {
-                        filter("user_id", "eq", userId)
+                        filter {
+                            eq("user_id", userId)
+                        }
                         order("updated_at", Order.DESCENDING)
                         limit(1)
                     }.decodeSingleOrNull<AIPersonalityProfile>()
@@ -125,7 +127,7 @@ class AIViewModel(
                                 profileData = profileJson
                             )
                             val savedProfile = SupabaseManager.client.postgrest.from("ai_personality_profiles")
-                                .upsert(newProfile, onConflict = "user_id")
+                                .upsert(newProfile) // Removed onConflict for simplicity, upsert by primary key is default
                                 .decodeSingle<AIPersonalityProfile>()
                             _uiState.update { it.copy(personalityProfile = savedProfile, isLoading = false) }
                         } else {
