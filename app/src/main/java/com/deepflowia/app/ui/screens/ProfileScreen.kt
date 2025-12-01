@@ -23,8 +23,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import android.content.Intent
 import android.net.Uri
+import com.deepflowia.app.viewmodel.AIViewModel
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +36,7 @@ fun ProfileScreen(
     navController: NavController,
     authViewModel: AuthViewModel = viewModel(),
     themeViewModel: ThemeViewModel = viewModel(),
+    aiViewModel: AIViewModel = viewModel(),
     onNavigateToLogin: () -> Unit
 ) {
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
@@ -62,6 +67,8 @@ fun ProfileScreen(
             ProfileHeader()
             Spacer(modifier = Modifier.height(24.dp))
             Column(Modifier.padding(horizontal = 16.dp)) {
+                AIProfileSection(aiViewModel)
+                Spacer(modifier = Modifier.height(24.dp))
                 AccountSection(navController)
                 Spacer(modifier = Modifier.height(24.dp))
                 PreferencesSection(isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
@@ -104,6 +111,59 @@ fun ProfileHeader(authViewModel: AuthViewModel = viewModel()) {
         )
     }
 }
+
+@Composable
+fun AIProfileSection(aiViewModel: AIViewModel) {
+    val aiState by aiViewModel.uiState.collectAsState()
+    val profile = aiState.personalityProfile
+
+    // Helper to parse title/description from JSON string
+    fun parseProfileData(jsonString: String): Pair<String, String> {
+        return try {
+            val json = Json.parseToJsonElement(jsonString).jsonObject
+            val title = json["titre"]?.jsonPrimitive?.content ?: "Profil IA"
+            val description = json["description"]?.jsonPrimitive?.content ?: "Générez votre profil pour en savoir plus."
+            Pair(title, description)
+        } catch (e: Exception) {
+            Pair("Profil IA", "Générez votre profil pour en savoir plus.")
+        }
+    }
+
+    val (title, description) = if (profile != null) {
+        parseProfileData(profile.profileData)
+    } else {
+        Pair("Profil de Productivité", "Générez votre profil pour découvrir votre style de productivité.")
+    }
+
+    Column {
+        Text("PROFIL IA", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(description, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { aiViewModel.generateAndStorePersonalityProfile() },
+                    enabled = !aiState.isLoading,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    if (aiState.isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text(if (profile == null) "Générer mon profil" else "Rafraîchir")
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun AccountSection(navController: NavController) {
