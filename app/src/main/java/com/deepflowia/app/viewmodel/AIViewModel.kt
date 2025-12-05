@@ -159,9 +159,7 @@ class AIViewModel(
 
             when (val result = geminiService.generateContent(prompt)) {
                 is GeminiResult.Success -> {
-                    val rawResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
-                    // Clean up any remaining markdown asterisks, just in case.
-                    val aiResponse = rawResponse.replace(Regex("\\*\\*?"), "")
+                    val aiResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
                     var suggestedAction: SuggestedAction? = null
 
                     if (_uiState.value.currentMode == AIMode.CREATION) {
@@ -193,21 +191,35 @@ class AIViewModel(
         val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return
 
         viewModelScope.launch {
+            var confirmationMessage = "Je ne suis pas sûr de ce qu'il faut créer. Pouvez-vous clarifier ?"
             when (action.type.lowercase()) {
                 "tâche", "task" -> {
-                    val newTask = Task(
-                        userId = userId,
-                        title = action.titre,
-                        description = action.details
-                    )
-                    taskViewModel.createTask(newTask)
+                    if (action.parent_id.isNullOrBlank()) {
+                        val newTask = Task(userId = userId, title = action.titre, description = action.details)
+                        taskViewModel.createTask(newTask)
+                        confirmationMessage = "✅ Tâche créée : **${action.titre}**"
+                    } else {
+                        val newSubtask = Subtask(userId = userId, title = action.titre, parentTaskId = action.parent_id)
+                        taskViewModel.createSubtask(newSubtask)
+                        confirmationMessage = "✔️ Sous-tâche créée : **${action.titre}**"
+                    }
+                }
+                 "objectif", "goal" -> {
+                    if (action.parent_id.isNullOrBlank()) {
+                        goalViewModel.addGoal(action.titre, action.details, null)
+                        confirmationMessage = "🎯 Objectif créé : **${action.titre}**"
+                    } else {
+                        val newSubobjective = Subobjective(userId = userId, title = action.titre, description = action.details, parentGoalId = action.parent_id)
+                        goalViewModel.createSubobjective(newSubobjective)
+                        confirmationMessage = "✔️ Sous-objectif créé : **${action.titre}**"
+                    }
                 }
             }
             _uiState.update {
                 it.copy(
                     suggestedAction = null,
                     conversation = it.conversation + ChatMessage(
-                        text = "Parfait, j'ai créé la tâche : '${action.titre}'.",
+                        text = confirmationMessage,
                         isFromUser = false
                     )
                 )
@@ -334,7 +346,7 @@ class AIViewModel(
     }
 
     private fun buildPrompt(userMessage: String): String {
-        val basePrompt = "Vous êtes un coach en productivité. Répondez de manière concise, utile et conversationnelle. N'utilisez pas de Markdown ou de formatage spécial."
+        val basePrompt = "Vous êtes un coach en productivité intelligent et amical. Votre objectif est d'aider l'utilisateur à atteindre son plein potentiel. **Répondez toujours en utilisant le format Markdown et des emojis pour rendre vos réponses engageantes et faciles à lire.**"
         var userDataContext = ""
 
         if (_uiState.value.canAccessData) {
@@ -342,25 +354,40 @@ class AIViewModel(
             val habits = habitViewModel.filteredHabits.value
             val goals = goalViewModel.filteredGoals.value
 
-            val taskSummary = tasks.joinToString(", ") { it.title }
-            val habitSummary = habits.joinToString(", ") { it.title }
-            val goalSummary = goals.joinToString(", ") { it.title }
+            val taskSummary = tasks.take(5).joinToString("\n") {
+                "- Tâche: ${it.title} ${if(it.completed) "✅" else "⏳"}" +
+                it.subtasks.joinToString("") { st -> "\n  - Sous-tâche: ${st.title} ${if(st.completed) "✔️" else "🔘"}"}
+            }
+            val habitSummary = habits.take(5).joinToString("\n") { "- Habitude: ${it.title} (Série: ${it.streak} 🔥)" }
+            val goalSummary = goals.take(5).joinToString("\n") {
+                "- Objectif: ${it.title} (${it.progress}%) 🎯" +
+                it.subobjectives.joinToString("") { so -> "\n  - Sous-objectif: ${so.title} ${if(so.completed) "✔️" else "🔘"}"}
+            }
 
             userDataContext = """
-                Voici les données actuelles de l'utilisateur pour vous donner du contexte. Utilisez ces informations pour personnaliser votre réponse.
-                - Tâches en cours: $taskSummary
-                - Habitudes suivies: $habitSummary
-                - Objectifs visés: $goalSummary
+                ---
+                ### Contexte de l'Utilisateur 📊
+                Voici un résumé des données actuelles de l'utilisateur pour vous aider à personnaliser votre réponse :
+
+                **Tâches Principales :**
+                $taskSummary
+
+                **Habitudes Suivies :**
+                $habitSummary
+
+                **Objectifs Actuels :**
+                $goalSummary
+                ---
             """.trimIndent()
         }
 
         val modeInstruction = when (_uiState.value.currentMode) {
-            AIMode.DISCUSSION -> "Mode actuel : Discussion. Aidez l'utilisateur à réfléchir et à trouver des idées."
-            AIMode.CREATION -> "Mode actuel : Création. Si l'utilisateur exprime une intention de créer une tâche, une habitude ou un objectif, répondez avec un format JSON simple comme `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\"}`. Sinon, discutez normalement."
-            AIMode.ANALYSE -> "Mode actuel : Analyse. Analysez les données fournies (si l'accès est autorisé) et répondez à la demande de l'utilisateur."
+            AIMode.DISCUSSION -> "✍️ **Mode Discussion :** Aidez l'utilisateur à réfléchir, à explorer des idées et à planifier. Soyez un partenaire de brainstorming."
+            AIMode.CREATION -> "💡 **Mode Création :** Si l'utilisateur veut créer quelque chose, proposez une réponse au format JSON. Par exemple : `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\", \"parent_id\": \"...\"}`. Le `parent_id` est optionnel, à utiliser pour les sous-tâches/sous-objectifs. Sinon, discutez normalement."
+            AIMode.ANALYSE -> "📈 **Mode Analyse :** Analysez en profondeur les données fournies dans le contexte et répondez aux questions spécifiques de l'utilisateur sur sa productivité."
         }
 
-        return "$basePrompt\n$modeInstruction\n$userDataContext\n\nUtilisateur: $userMessage\nAssistant:"
+        return "$basePrompt\n\n$modeInstruction\n\n$userDataContext\n\n**Utilisateur :**\n$userMessage\n\n**Assistant :**\n"
     }
 
     private fun parseSuggestedAction(responseText: String): SuggestedAction? {
