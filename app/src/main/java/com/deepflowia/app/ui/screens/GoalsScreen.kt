@@ -8,9 +8,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.deepflowia.app.models.Goal
+import com.deepflowia.app.models.Subobjective
 import com.deepflowia.app.viewmodel.GoalViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +86,10 @@ fun GoalsScreen(
                     },
                     onToggleCompletion = { goalViewModel.toggleCompletion(goal) },
                     onUpdateProgress = { change -> goalViewModel.updateGoalProgress(goal, change) },
-                    onDelete = { goalViewModel.deleteGoal(goal) }
+                    onDelete = { goalViewModel.deleteGoal(goal) },
+                    onSubobjectiveCompleted = { subobjective, completed ->
+                        goalViewModel.updateSubobjective(subobjective.copy(completed = completed))
+                    }
                 )
             }
         }
@@ -95,25 +102,28 @@ fun GoalItem(
     onGoalClicked: () -> Unit,
     onToggleCompletion: () -> Unit,
     onUpdateProgress: (Int) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onSubobjectiveCompleted: (Subobjective, Boolean) -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null, // Désactive l'effet d'ondulation pour éviter le crash
-                onClick = onGoalClicked
-            ),
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onGoalClicked
+                    )
             ) {
                 Checkbox(
                     checked = goal.completed,
@@ -123,13 +133,41 @@ fun GoalItem(
                 Text(
                     text = goal.title,
                     style = MaterialTheme.typography.titleMedium,
-                    textDecoration = if (goal.completed) TextDecoration.LineThrough else TextDecoration.None
+                    textDecoration = if (goal.completed) TextDecoration.LineThrough else TextDecoration.None,
+                    modifier = Modifier.weight(1f)
                 )
+                if (goal.subobjectives.isNotEmpty()) {
+                    IconButton(onClick = { isExpanded = !isExpanded }) {
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = "Développer/Réduire les sous-objectifs"
+                        )
+                    }
+                }
             }
             goal.description?.let {
                 if (it.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(text = it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            AnimatedVisibility(visible = isExpanded && goal.subobjectives.isNotEmpty()) {
+                Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
+                    goal.subobjectives.forEach { subobjective ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = subobjective.completed,
+                                onCheckedChange = { onSubobjectiveCompleted(subobjective, it) }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = subobjective.title,
+                                textDecoration = if (subobjective.completed) TextDecoration.LineThrough else null,
+                                color = if (subobjective.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))

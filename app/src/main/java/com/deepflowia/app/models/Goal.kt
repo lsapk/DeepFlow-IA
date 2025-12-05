@@ -2,6 +2,7 @@ package com.deepflowia.app.models
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Transient
 
 @Serializable
 data class Goal(
@@ -22,4 +23,6 @@ data class Goal(
     val syncedAt: String? = null,
     @SerialName("updated_at")
     val updatedAt: String? = null,
+    @Transient
+    val subobjectives: List<Subobjective> = emptyList()
 )

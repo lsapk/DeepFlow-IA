@@ -22,7 +22,8 @@ data class ChatMessage(
 data class SuggestedAction(
     val type: String, // e.g., "tâche", "habitude"
     val titre: String,
-    val details: String? = null
+    val details: String? = null,
+    val parent_id: String? = null
 )
 
 /**
