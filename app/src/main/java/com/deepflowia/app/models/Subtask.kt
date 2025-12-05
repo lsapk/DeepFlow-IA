@@ -9,18 +9,16 @@ data class Subtask(
     val id: String? = null,
     @SerialName("parent_task_id")
     val parentTaskId: String,
-    @SerialName("user_id")
-    val userId: String,
     val title: String,
-    val description: String? = null,
-    @SerialName("completed")
-    val completed: Boolean? = false,
-    @SerialName("sort_order")
-    val sortOrder: Int? = 0,
-    @SerialName("priority")
-    val priority: String? = "medium",
+    val completed: Boolean = false,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    @SerialName("sort_order")
+    val sortOrder: Int = 0,
+    @SerialName("user_id")
+    val userId: String,
+    val description: String? = null,
+    val priority: String? = "medium"
 )
