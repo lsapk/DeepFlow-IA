@@ -7,16 +7,15 @@ import kotlinx.serialization.SerialName
 data class Subobjective(
     @SerialName("id")
     val id: String? = null,
-    @SerialName("parent_goal_id")
-    val parentGoalId: String,
     @SerialName("user_id")
     val userId: String,
+    @SerialName("parent_goal_id")
+    val parentGoalId: String,
     val title: String,
     val description: String? = null,
-    @SerialName("completed")
-    val completed: Boolean? = false,
+    val completed: Boolean = false,
     @SerialName("sort_order")
-    val sortOrder: Int? = 0,
+    val sortOrder: Int = 0,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

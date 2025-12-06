@@ -8,8 +8,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.deepflowia.app.models.Subtask
 import com.deepflowia.app.models.Task
 import com.deepflowia.app.viewmodel.TaskViewModel
 
@@ -94,6 +98,9 @@ fun TasksScreen(
                             },
                             onTaskCompleted = { completed ->
                                 taskViewModel.updateTask(task.copy(completed = completed))
+                            },
+                            onSubtaskCompleted = { subtask, completed ->
+                                taskViewModel.updateSubtask(subtask.copy(completed = completed))
                             }
                         )
                     }
@@ -104,51 +111,78 @@ fun TasksScreen(
 }
 
 @Composable
-fun TaskItem(task: Task, onTaskClicked: () -> Unit, onTaskCompleted: (Boolean) -> Unit) {
+fun TaskItem(
+    task: Task,
+    onTaskClicked: () -> Unit,
+    onTaskCompleted: (Boolean) -> Unit,
+    onSubtaskCompleted: (Subtask, Boolean) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null, // Désactive l'effet d'ondulation
-                onClick = onTaskClicked
-            ),
+        modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = task.completed,
-                onCheckedChange = onTaskCompleted,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.primary
-                )
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(
-                modifier = Modifier.weight(1f)
+        Column {
+            Row(
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onTaskClicked
+                    )
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = task.title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    textDecoration = if (task.completed) TextDecoration.LineThrough else null,
-                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                Checkbox(
+                    checked = task.completed,
+                    onCheckedChange = onTaskCompleted,
+                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                 )
-                task.description?.let {
-                    if (it.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = it,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = task.title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        textDecoration = if (task.completed) TextDecoration.LineThrough else null,
+                        color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                    )
+                    task.description?.let {
+                        if (it.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = it, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                if (task.subtasks.isNotEmpty()) {
+                    IconButton(onClick = { isExpanded = !isExpanded }) {
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = "Développer/Réduire les sous-tâches"
                         )
+                    }
+                }
+            }
+
+            AnimatedVisibility(visible = isExpanded) {
+                Column(modifier = Modifier.padding(start = 32.dp, end = 16.dp, bottom = 16.dp)) {
+                    task.subtasks.forEach { subtask ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = subtask.completed,
+                                onCheckedChange = { onSubtaskCompleted(subtask, it) }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = subtask.title,
+                                textDecoration = if (subtask.completed) TextDecoration.LineThrough else null,
+                                color = if (subtask.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.Goal
+import com.deepflowia.app.models.Subobjective
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.*
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 class GoalViewModel : ViewModel() {
 
     private val _goals = MutableStateFlow<List<Goal>>(emptyList())
+    private val _subobjectives = MutableStateFlow<List<Subobjective>>(emptyList())
     private val _showCompleted = MutableStateFlow(false)
     private val _selectedGoal = MutableStateFlow<Goal?>(null)
 
@@ -38,8 +40,13 @@ class GoalViewModel : ViewModel() {
     fun fetchGoals() {
         viewModelScope.launch {
             try {
-                val result = SupabaseManager.client.postgrest.from("goals").select().decodeList<Goal>()
-                _goals.value = result
+                val goalsResult = SupabaseManager.client.postgrest.from("goals").select().decodeList<Goal>()
+                val subobjectivesResult = SupabaseManager.client.postgrest.from("subobjectives").select().decodeList<Subobjective>()
+                _subobjectives.value = subobjectivesResult
+                val goalsWithSubobjectives = goalsResult.map { goal ->
+                    goal.copy(subobjectives = subobjectivesResult.filter { it.parentGoalId == goal.id })
+                }
+                _goals.value = goalsWithSubobjectives
             } catch (e: Exception) {
                 Log.e("GoalViewModel", "Erreur lors de la récupération des objectifs", e)
             }
@@ -175,6 +182,46 @@ class GoalViewModel : ViewModel() {
                 } catch (e: Exception) {
                     Log.e("GoalViewModel", "Erreur lors de la suppression de l'objectif", e)
                 }
+            }
+        }
+    }
+
+    fun createSubobjective(subobjective: Subobjective) {
+        viewModelScope.launch {
+            val user = SupabaseManager.client.auth.currentUserOrNull()
+            if (user != null) {
+                val newSubobjective = subobjective.copy(userId = user.id)
+                SupabaseManager.client.postgrest.from("subobjectives").insert(newSubobjective)
+                fetchGoals()
+            }
+        }
+    }
+
+    fun updateSubobjective(subobjective: Subobjective) {
+        viewModelScope.launch {
+            subobjective.id?.let {
+                SupabaseManager.client.postgrest.from("subobjectives").update({
+                    set("title", subobjective.title)
+                    set("completed", subobjective.completed)
+                }) {
+                    filter {
+                        eq("id", it)
+                    }
+                }
+                fetchGoals()
+            }
+        }
+    }
+
+    fun deleteSubobjective(subobjective: Subobjective) {
+        viewModelScope.launch {
+            subobjective.id?.let {
+                SupabaseManager.client.postgrest.from("subobjectives").delete {
+                    filter {
+                        eq("id", it)
+                    }
+                }
+                fetchGoals()
             }
         }
     }

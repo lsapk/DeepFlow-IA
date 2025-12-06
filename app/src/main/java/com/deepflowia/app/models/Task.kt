@@ -2,6 +2,7 @@ package com.deepflowia.app.models
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Transient
 
 @Serializable
 data class Task(
@@ -23,5 +24,7 @@ data class Task(
     @SerialName("updated_at")
     val updatedAt: String? = null,
     @SerialName("linked_goal_id")
-    val linkedGoalId: String? = null
+    val linkedGoalId: String? = null,
+    @Transient
+    val subtasks: List<Subtask> = emptyList()
 )
