@@ -345,14 +345,15 @@ class AIViewModel(
         }
     }
 
-    private fun buildPrompt(userMessage: String): String {
+    private suspend fun buildPrompt(userMessage: String): String {
         val basePrompt = "Vous êtes un coach en productivité intelligent et amical. Votre objectif est d'aider l'utilisateur à atteindre son plein potentiel. **Répondez toujours en utilisant le format Markdown et des emojis pour rendre vos réponses engageantes et faciles à lire.**"
         var userDataContext = ""
 
         if (_uiState.value.canAccessData) {
-            val tasks = taskViewModel.tasks.value
-            val habits = habitViewModel.filteredHabits.value
-            val goals = goalViewModel.filteredGoals.value
+            // Utilise .first() pour s'assurer que les données sont chargées avant de continuer.
+            val tasks = taskViewModel.tasks.first()
+            val habits = habitViewModel.filteredHabits.first()
+            val goals = goalViewModel.filteredGoals.first()
 
             val taskSummary = tasks.take(5).joinToString("\n") {
                 "- Tâche: ${it.title} ${if(it.completed) "✅" else "⏳"}" +
