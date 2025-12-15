@@ -41,13 +41,3 @@ data class BannedUser(
     @SerialName("created_at")
     val createdAt: String
 )
-
-@Serializable
-data class UserRole(
-    val id: String,
-    @SerialName("user_id")
-    val userId: String,
-    val role: String,
-    @SerialName("created_at")
-    val createdAt: String
-)
