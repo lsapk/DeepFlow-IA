@@ -132,6 +132,7 @@ fun NavGraph(
         composable("edit_profile") {
             EditProfileScreen(navController = navController)
         }
+        composable("admin_panel") { AdminScreen(navController = navController) }
     }
 }
 

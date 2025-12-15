@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -73,6 +74,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 PreferencesSection(isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
                 Spacer(modifier = Modifier.height(24.dp))
+                AdminSection(navController, authViewModel)
                 SupportSection(navController)
                 Spacer(modifier = Modifier.height(32.dp))
                 LogoutButton(
@@ -83,6 +85,34 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun AdminSection(navController: NavController, authViewModel: AuthViewModel) {
+    val userRole by authViewModel.userRole.collectAsState()
+
+    if (userRole == "admin") {
+        Column {
+            Text(
+                "ADMINISTRATION",
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                SettingsItem(
+                    icon = Icons.Default.Security,
+                    title = "Panneau d'administration",
+                    onClick = { navController.navigate("admin_panel") }
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
