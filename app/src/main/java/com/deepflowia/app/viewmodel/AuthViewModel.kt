@@ -4,21 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
+import com.deepflowia.app.models.UserRole
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class UserProfile(
-    val id: String,
-    val role: String? = null
-)
 
 class AuthViewModel : ViewModel() {
 
@@ -56,15 +49,15 @@ class AuthViewModel : ViewModel() {
         if (userId == null) return
         viewModelScope.launch {
             try {
-                val userProfile = SupabaseManager.client.postgrest
-                    .from("user")
-                    .select(columns = Columns.list("id", "role")) {
-                        filter { eq("id", userId) }
+                val userRoleResult = SupabaseManager.client.postgrest
+                    .from("user_roles")
+                    .select {
+                        filter { eq("user_id", userId) }
                     }
-                    .decodeSingleOrNull<UserProfile>()
+                    .decodeSingleOrNull<UserRole>()
 
-                _userRole.value = userProfile?.role
-                Log.d("AuthViewModel", "Rôle de l'utilisateur récupéré : ${userProfile?.role}")
+                _userRole.value = userRoleResult?.role
+                Log.d("AuthViewModel", "Rôle de l'utilisateur récupéré : ${userRoleResult?.role}")
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Erreur lors de la récupération du rôle de l'utilisateur", e)
                 _userRole.value = null

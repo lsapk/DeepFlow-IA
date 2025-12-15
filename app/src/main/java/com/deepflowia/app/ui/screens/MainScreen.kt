@@ -9,23 +9,34 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.deepflowia.app.navigation.BottomNavItem
 import com.deepflowia.app.navigation.NavGraph
+import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
 
 @Composable
-fun MainScreen(themeViewModel: ThemeViewModel) {
+fun MainScreen(
+    themeViewModel: ThemeViewModel,
+    authViewModel: AuthViewModel = viewModel()
+) {
     val navController = rememberNavController()
-    val items = listOf(
+    val userRole by authViewModel.userRole.collectAsState()
+
+    val items = mutableListOf(
         BottomNavItem.Home,
         BottomNavItem.AI,
         BottomNavItem.Profile
     )
+    if (userRole == "admin") {
+        items.add(BottomNavItem.Admin)
+    }
 
     Scaffold(
         bottomBar = {

@@ -40,8 +40,13 @@ class GoalViewModel : ViewModel() {
     fun fetchGoals() {
         viewModelScope.launch {
             try {
-                val goalsResult = SupabaseManager.client.postgrest.from("goals").select().decodeList<Goal>()
-                val subobjectivesResult = SupabaseManager.client.postgrest.from("subobjectives").select().decodeList<Subobjective>()
+                val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
+                val goalsResult = SupabaseManager.client.postgrest.from("goals").select {
+                    filter { eq("user_id", userId) }
+                }.decodeList<Goal>()
+                val subobjectivesResult = SupabaseManager.client.postgrest.from("subobjectives").select {
+                    filter { eq("user_id", userId) }
+                }.decodeList<Subobjective>()
                 _subobjectives.value = subobjectivesResult
                 val goalsWithSubobjectives = goalsResult.map { goal ->
                     goal.copy(subobjectives = subobjectivesResult.filter { it.parentGoalId == goal.id })
