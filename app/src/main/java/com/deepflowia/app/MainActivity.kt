@@ -17,11 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.deepflowia.app.ui.screens.MainScreen
 import com.deepflowia.app.ui.theme.DeepFlowIATheme
+import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
 
 class MainActivity : ComponentActivity() {
 
     private val themeViewModel: ThemeViewModel by viewModels()
+    private val authViewModel: AuthViewModel by viewModels()
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -53,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(themeViewModel = themeViewModel)
+                    MainScreen(themeViewModel = themeViewModel, authViewModel = authViewModel)
                 }
             }
         }
