@@ -67,7 +67,6 @@ class AIViewModel(
             )
         }
         fetchPersonalityProfile()
-        }
     }
 
     fun fetchPersonalityProfile() {
@@ -315,7 +314,7 @@ class AIViewModel(
                                 userId = userId,
                                 analysisData = analysisText
                             )
-                            val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
+                            val savedAnalysis = SupabaseManager.client.postgrest.from("ai_personality_profiles")
                                 .upsert(analysisData)
                                 .decodeSingle<AIProductivityAnalysis>()
                             // Mettre à jour l'état avec les données sauvegardées (facultatif, car l'UI a déjà le résultat)
