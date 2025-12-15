@@ -22,7 +22,13 @@ class JournalViewModel : ViewModel() {
 
     fun fetchJournalEntries() {
         viewModelScope.launch {
+            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+            if (userId == null) {
+                _journalEntries.value = emptyList()
+                return@launch
+            }
             val result = SupabaseManager.client.postgrest.from("journal_entries").select {
+                filter { eq("user_id", userId) }
                 order("created_at", Order.DESCENDING)
             }.decodeList<JournalEntry>()
             _journalEntries.value = result

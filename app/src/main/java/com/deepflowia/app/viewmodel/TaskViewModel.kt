@@ -23,8 +23,20 @@ class TaskViewModel : ViewModel() {
 
     fun fetchTasks() {
         viewModelScope.launch {
-            val tasksResult = SupabaseManager.client.postgrest.from("tasks").select().decodeList<Task>()
-            val subtasksResult = SupabaseManager.client.postgrest.from("subtasks").select().decodeList<Subtask>()
+            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+            if (userId == null) {
+                _tasks.value = emptyList()
+                return@launch
+            }
+
+            val tasksResult = SupabaseManager.client.postgrest.from("tasks").select {
+                filter { eq("user_id", userId) }
+            }.decodeList<Task>()
+
+            val subtasksResult = SupabaseManager.client.postgrest.from("subtasks").select {
+                filter { eq("user_id", userId) }
+            }.decodeList<Subtask>()
+
             _subtasks.value = subtasksResult
             val tasksWithSubtasks = tasksResult.map { task ->
                 task.copy(subtasks = subtasksResult.filter { it.parentTaskId == task.id })

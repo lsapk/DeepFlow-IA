@@ -71,7 +71,14 @@ class HabitViewModel : ViewModel() {
 
     fun fetchHabits() {
         viewModelScope.launch {
-            val result = SupabaseManager.client.postgrest.from("habits").select().decodeList<Habit>()
+            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+            if (userId == null) {
+                _allHabits.value = emptyList()
+                return@launch
+            }
+            val result = SupabaseManager.client.postgrest.from("habits").select {
+                filter { eq("user_id", userId) }
+            }.decodeList<Habit>()
             _allHabits.value = result
         }
     }

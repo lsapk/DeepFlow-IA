@@ -13,10 +13,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 @Serializable
-data class UserProfile(
-    val id: String,
+data class UserRoleInfo(
+    @SerialName("user_id")
+    val userId: String,
     val role: String? = null
 )
 
@@ -56,15 +58,18 @@ class AuthViewModel : ViewModel() {
         if (userId == null) return
         viewModelScope.launch {
             try {
-                val userProfile = SupabaseManager.client.postgrest
-                    .from("user")
-                    .select(columns = Columns.list("id", "role")) {
-                        filter { eq("id", userId) }
+                val userRoleInfo = SupabaseManager.client.postgrest
+                    .from("user_roles")
+                    .select {
+                        filter { eq("user_id", userId) }
                     }
-                    .decodeSingleOrNull<UserProfile>()
+                    .decodeSingleOrNull<UserRoleInfo>()
 
-                _userRole.value = userProfile?.role
-                Log.d("AuthViewModel", "Rôle de l'utilisateur récupéré : ${userProfile?.role}")
+                _userRole.value = userRoleInfo?.role
+                Log.d("AuthViewModel", "Rôle de l'utilisateur récupéré : ${userRoleInfo?.role}")
+                if (userRoleInfo == null) {
+                    Log.d("AuthViewModel", "Aucun rôle trouvé pour l'utilisateur ID : $userId")
+                }
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Erreur lors de la récupération du rôle de l'utilisateur", e)
                 _userRole.value = null
