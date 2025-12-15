@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.FocusSession
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,9 +48,17 @@ class FocusViewModel : ViewModel() {
             _isLoading.value = true
             _errorMessage.value = null
             try {
+                val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+                if (userId == null) {
+                    _focusSessions.value = emptyList()
+                    calculateStats(emptyList())
+                    _isLoading.value = false
+                    return@launch
+                }
                 val result = SupabaseManager.client.postgrest
                     .from("focus_sessions")
                     .select {
+                        filter { eq("user_id", userId) }
                         order("started_at", Order.DESCENDING)
                     }
                     .decodeList<FocusSession>()
