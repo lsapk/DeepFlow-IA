@@ -7,9 +7,18 @@ import com.deepflowia.app.data.SupabaseManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class UserProfile(
+    val id: String,
+    val role: String? = null
+)
 
 class AuthViewModel : ViewModel() {
 
@@ -19,21 +28,46 @@ class AuthViewModel : ViewModel() {
     private val _userEmail = MutableStateFlow<String?>(null)
     val userEmail: StateFlow<String?> = _userEmail
 
+    private val _userRole = MutableStateFlow<String?>(null)
+    val userRole: StateFlow<String?> = _userRole
+
     init {
         viewModelScope.launch {
             SupabaseManager.client.auth.sessionStatus.collect { status ->
                 Log.d("AuthViewModel", "Statut de la session Supabase : $status")
-                _authState.value = when (status) {
+                when (status) {
                     is SessionStatus.Authenticated -> {
                         _userEmail.value = status.session.user?.email
-                        AuthState.SignedIn
+                        fetchUserRole(status.session.user?.id)
+                        _authState.value = AuthState.SignedIn
                     }
                     is SessionStatus.NotAuthenticated -> {
                         _userEmail.value = null
-                        AuthState.SignedOut
+                        _userRole.value = null
+                        _authState.value = AuthState.SignedOut
                     }
-                    else -> AuthState.Loading
+                    else -> _authState.value = AuthState.Loading
                 }
+            }
+        }
+    }
+
+    private fun fetchUserRole(userId: String?) {
+        if (userId == null) return
+        viewModelScope.launch {
+            try {
+                val userProfile = SupabaseManager.client.postgrest
+                    .from("user")
+                    .select(columns = Columns.list("id", "role")) {
+                        filter { eq("id", userId) }
+                    }
+                    .decodeSingleOrNull<UserProfile>()
+
+                _userRole.value = userProfile?.role
+                Log.d("AuthViewModel", "Rôle de l'utilisateur récupéré : ${userProfile?.role}")
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Erreur lors de la récupération du rôle de l'utilisateur", e)
+                _userRole.value = null
             }
         }
     }
