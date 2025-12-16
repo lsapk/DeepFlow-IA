@@ -61,18 +61,29 @@ class GoalViewModel : ViewModel() {
     fun getGoalById(id: String) {
         viewModelScope.launch {
             if (id == "-1") {
-                _selectedGoal.value = null
+                _selectedGoal.value = null // Clear for new goal creation
                 return@launch
             }
             try {
-                val result = SupabaseManager.client.postgrest.from("goals")
+                val goalResult = SupabaseManager.client.postgrest.from("goals")
                     .select {
                         filter { eq("id", id) }
                     }
                     .decodeSingleOrNull<Goal>()
-                _selectedGoal.value = result
+
+                if (goalResult != null) {
+                    val subobjectivesResult = SupabaseManager.client.postgrest.from("subobjectives")
+                        .select {
+                            filter { eq("parent_goal_id", id) }
+                        }
+                        .decodeList<Subobjective>()
+                    // Combine the goal with its subobjectives
+                    _selectedGoal.value = goalResult.copy(subobjectives = subobjectivesResult)
+                } else {
+                    _selectedGoal.value = null
+                }
             } catch (e: Exception) {
-                Log.e("GoalViewModel", "Erreur lors de la récupération de l'objectif", e)
+                Log.e("GoalViewModel", "Erreur lors de la récupération de l'objectif et des sous-objectifs", e)
                 _selectedGoal.value = null
             }
         }
@@ -193,11 +204,14 @@ class GoalViewModel : ViewModel() {
 
     fun createSubobjective(subobjective: Subobjective) {
         viewModelScope.launch {
-            val user = SupabaseManager.client.auth.currentUserOrNull()
-            if (user != null) {
+            try {
+                val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
                 val newSubobjective = subobjective.copy(userId = user.id)
                 SupabaseManager.client.postgrest.from("subobjectives").insert(newSubobjective)
-                fetchGoals()
+                getGoalById(subobjective.parentGoalId) // Refresh selected goal
+                fetchGoals() // Also refresh the main list for consistency
+            } catch (e: Exception) {
+                Log.e("GoalViewModel", "Erreur lors de la création du sous-objectif", e)
             }
         }
     }
@@ -205,15 +219,21 @@ class GoalViewModel : ViewModel() {
     fun updateSubobjective(subobjective: Subobjective) {
         viewModelScope.launch {
             subobjective.id?.let {
-                SupabaseManager.client.postgrest.from("subobjectives").update({
-                    set("title", subobjective.title)
-                    set("completed", subobjective.completed)
-                }) {
-                    filter {
-                        eq("id", it)
+                try {
+                    SupabaseManager.client.postgrest.from("subobjectives").update({
+                        set("title", subobjective.title)
+                        set("description", subobjective.description)
+                        set("completed", subobjective.completed)
+                    }) {
+                        filter {
+                            eq("id", it)
+                        }
                     }
+                    getGoalById(subobjective.parentGoalId) // Refresh selected goal
+                    fetchGoals() // Also refresh the main list for consistency
+                } catch (e: Exception) {
+                    Log.e("GoalViewModel", "Erreur lors de la mise à jour du sous-objectif", e)
                 }
-                fetchGoals()
             }
         }
     }
@@ -221,12 +241,17 @@ class GoalViewModel : ViewModel() {
     fun deleteSubobjective(subobjective: Subobjective) {
         viewModelScope.launch {
             subobjective.id?.let {
-                SupabaseManager.client.postgrest.from("subobjectives").delete {
-                    filter {
-                        eq("id", it)
+                try {
+                    SupabaseManager.client.postgrest.from("subobjectives").delete {
+                        filter {
+                            eq("id", it)
+                        }
                     }
+                    getGoalById(subobjective.parentGoalId) // Refresh selected goal
+                    fetchGoals() // Also refresh the main list for consistency
+                } catch (e: Exception) {
+                    Log.e("GoalViewModel", "Erreur lors de la suppression du sous-objectif", e)
                 }
-                fetchGoals()
             }
         }
     }
