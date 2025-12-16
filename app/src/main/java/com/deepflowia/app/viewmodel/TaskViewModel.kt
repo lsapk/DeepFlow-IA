@@ -16,9 +16,36 @@ class TaskViewModel : ViewModel() {
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks
     private val _subtasks = MutableStateFlow<List<Subtask>>(emptyList())
-
+    private val _selectedTask = MutableStateFlow<Task?>(null)
+    val selectedTask: StateFlow<Task?> = _selectedTask
     init {
         fetchTasks()
+    }
+
+    fun getTaskById(taskId: String) {
+        viewModelScope.launch {
+            if (taskId == "-1") {
+                _selectedTask.value = null
+                return@launch
+            }
+            try {
+                val taskResult = SupabaseManager.client.postgrest.from("tasks")
+                    .select { filter { eq("id", taskId) } }
+                    .decodeSingleOrNull<Task>()
+
+                if (taskResult != null) {
+                    val subtasksResult = SupabaseManager.client.postgrest.from("subtasks")
+                        .select { filter { eq("parent_task_id", taskId) } }
+                        .decodeList<Subtask>()
+                    _selectedTask.value = taskResult.copy(subtasks = subtasksResult)
+                } else {
+                    _selectedTask.value = null
+                }
+            } catch (e: Exception) {
+               // Log error
+                _selectedTask.value = null
+            }
+        }
     }
 
     fun fetchTasks() {
@@ -90,11 +117,14 @@ class TaskViewModel : ViewModel() {
 
     fun createSubtask(subtask: Subtask) {
         viewModelScope.launch {
-            val user = SupabaseManager.client.auth.currentUserOrNull()
-            if (user != null) {
+            try {
+                val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
                 val newSubtask = subtask.copy(userId = user.id)
                 SupabaseManager.client.postgrest.from("subtasks").insert(newSubtask)
-                fetchTasks() // Refresh all tasks to update subtask lists
+                getTaskById(subtask.parentTaskId) // Refresh selected task
+                fetchTasks() // Also refresh main list
+            } catch (e: Exception) {
+                // Log error
             }
         }
     }
@@ -102,15 +132,22 @@ class TaskViewModel : ViewModel() {
     fun updateSubtask(subtask: Subtask) {
         viewModelScope.launch {
             subtask.id?.let {
-                SupabaseManager.client.postgrest.from("subtasks").update({
-                    set("title", subtask.title)
-                    set("completed", subtask.completed)
-                }) {
-                    filter {
-                        eq("id", it)
+                try {
+                    SupabaseManager.client.postgrest.from("subtasks").update({
+                        set("title", subtask.title)
+                        set("completed", subtask.completed)
+                        set("description", subtask.description)
+                        set("priority", subtask.priority)
+                    }) {
+                        filter {
+                            eq("id", it)
+                        }
                     }
+                    getTaskById(subtask.parentTaskId) // Refresh selected task
+                    fetchTasks() // Also refresh main list
+                } catch (e: Exception) {
+                    // Log error
                 }
-                fetchTasks()
             }
         }
     }
@@ -118,12 +155,17 @@ class TaskViewModel : ViewModel() {
     fun deleteSubtask(subtask: Subtask) {
         viewModelScope.launch {
             subtask.id?.let {
-                SupabaseManager.client.postgrest.from("subtasks").delete {
-                    filter {
-                        eq("id", it)
+                try {
+                    SupabaseManager.client.postgrest.from("subtasks").delete {
+                        filter {
+                            eq("id", it)
+                        }
                     }
+                    getTaskById(subtask.parentTaskId) // Refresh selected task
+                    fetchTasks() // Also refresh main list
+                } catch (e: Exception) {
+                    // Log error
                 }
-                fetchTasks()
             }
         }
     }
