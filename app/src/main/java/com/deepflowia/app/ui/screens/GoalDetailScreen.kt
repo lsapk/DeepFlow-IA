@@ -179,8 +179,9 @@ fun GoalDetailScreen(
                                 if (newSubobjectiveTitle.isNotBlank()) {
                                     val newSubobjective = Subobjective(
                                         title = newSubobjectiveTitle,
+                                        description = null, // Pas de champ de description dans cet ajout rapide
                                         parentGoalId = selectedGoal!!.id!!,
-                                        userId = "" // Will be set in ViewModel
+                                        userId = "" // Sera défini dans le ViewModel
                                     )
                                     goalViewModel.createSubobjective(newSubobjective)
                                     newSubobjectiveTitle = "" // Clear input field
