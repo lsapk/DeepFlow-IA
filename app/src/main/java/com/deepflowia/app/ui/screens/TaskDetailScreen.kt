@@ -206,8 +206,9 @@ fun TaskDetailScreen(
                                     if (newSubtaskTitle.isNotBlank()) {
                                         val newSubtask = Subtask(
                                             title = newSubtaskTitle,
+                                            description = null, // Pas de champ de description dans cet ajout rapide
                                             parentTaskId = selectedTask!!.id!!,
-                                            userId = "" // ViewModel handles this
+                                            userId = "" // Le ViewModel s'en occupe
                                         )
                                         taskViewModel.createSubtask(newSubtask)
                                         newSubtaskTitle = "" // Clear field
