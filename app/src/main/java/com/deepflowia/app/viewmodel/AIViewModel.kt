@@ -198,7 +198,7 @@ class AIViewModel(
                         taskViewModel.createTask(newTask)
                         confirmationMessage = "✅ Tâche créée : **${action.titre}**"
                     } else {
-                        val newSubtask = Subtask(userId = userId, title = action.titre, parentTaskId = action.parent_id)
+                        val newSubtask = Subtask(userId = userId, title = action.titre, description = action.details, parentTaskId = action.parent_id)
                         taskViewModel.createSubtask(newSubtask)
                         confirmationMessage = "✔️ Sous-tâche créée : **${action.titre}**"
                     }
