@@ -70,7 +70,7 @@ fun ProfileScreen(
             Column(Modifier.padding(horizontal = 16.dp)) {
                 AccountSection(navController)
                 Spacer(modifier = Modifier.height(24.dp))
-                PreferencesSection(isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
+                PreferencesSection(navController, isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
                 Spacer(modifier = Modifier.height(24.dp))
                 AdminSection(navController, authViewModel)
                 SupportSection(navController)
@@ -160,6 +160,7 @@ fun AccountSection(navController: NavController) {
 
 @Composable
 fun PreferencesSection(
+    navController: NavController,
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
     notifications: MutableState<Boolean>
