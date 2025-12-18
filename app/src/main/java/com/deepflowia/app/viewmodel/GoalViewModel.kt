@@ -93,7 +93,7 @@ class GoalViewModel : ViewModel() {
         val user = SupabaseManager.client.auth.currentUserOrNull() ?: return null
         return try {
             val newGoal = goal.copy(userId = user.id)
-            val result = SupabaseManager.client.postgrest.from("goals").insert(newGoal, returning = "representation").decodeSingle<Goal>()
+            val result = SupabaseManager.client.postgrest.from("goals").insert(listOf(newGoal)).decodeSingle<Goal>()
             fetchGoals()
             result.id
         } catch (e: Exception) {
