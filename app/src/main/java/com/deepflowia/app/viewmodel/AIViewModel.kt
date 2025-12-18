@@ -205,7 +205,8 @@ class AIViewModel(
                 }
                  "objectif", "goal" -> {
                     if (action.parent_id.isNullOrBlank()) {
-                        goalViewModel.addGoal(action.titre, action.details, null)
+                        val newGoal = Goal(userId = userId, title = action.titre, description = action.details)
+                        goalViewModel.createGoal(newGoal)
                         confirmationMessage = "🎯 Objectif créé : **${action.titre}**"
                     } else {
                         val newSubobjective = Subobjective(userId = userId, title = action.titre, description = action.details, parentGoalId = action.parent_id)
