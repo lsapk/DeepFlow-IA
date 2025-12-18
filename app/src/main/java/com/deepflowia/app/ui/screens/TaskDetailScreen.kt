@@ -13,13 +13,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.app.DatePickerDialog
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.deepflowia.app.models.Subtask
 import com.deepflowia.app.models.Task
+import com.deepflowia.app.services.ReminderScheduler
 import com.deepflowia.app.viewmodel.TaskViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,8 +33,11 @@ fun TaskDetailScreen(
     navController: NavController,
     taskViewModel: TaskViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val reminderScheduler = remember { ReminderScheduler(context) }
     val isNewTask = taskId == null || taskId == "-1"
     val selectedTask by taskViewModel.selectedTask.collectAsState()
+    val scope = rememberCoroutineScope()
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -93,13 +101,29 @@ fun TaskDetailScreen(
                                     dueDate = dueDate.ifBlank { null }
                                 )
                             }
+                            scope.launch {
+                                val newTaskId = if (isNewTask) {
+                                    taskViewModel.createTask(taskToSave)
+                                } else {
+                                    taskViewModel.updateTask(taskToSave)
+                                    selectedTask?.id
+                                }
 
-                            if (isNewTask) {
-                                taskViewModel.createTask(taskToSave)
-                            } else {
-                                taskViewModel.updateTask(taskToSave)
+                                // Schedule or cancel the reminder
+                                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                try {
+                                    val date = sdf.parse(dueDate)
+                                    if (date != null && newTaskId != null) {
+                                        reminderScheduler.scheduleDeadlineReminder(newTaskId, date.time, title)
+                                    }
+                                } catch (e: Exception) {
+                                    // Date format is invalid, or dueDate is blank, cancel any existing reminder
+                                    if (newTaskId != null) {
+                                        reminderScheduler.cancelDeadlineReminder(newTaskId)
+                                    }
+                                }
+                                navController.popBackStack()
                             }
-                            navController.popBackStack()
                         }
                     }) {
                         Icon(Icons.Default.Done, contentDescription = "Sauvegarder")
@@ -107,6 +131,7 @@ fun TaskDetailScreen(
                     if (!isNewTask) {
                         IconButton(onClick = {
                             selectedTask?.let {
+                                reminderScheduler.cancelDeadlineReminder(it.id!!)
                                 taskViewModel.deleteTask(it)
                                 navController.popBackStack()
                             }
@@ -151,12 +176,25 @@ fun TaskDetailScreen(
                     )
                 }
                 item {
-                    OutlinedTextField(
-                        value = dueDate,
-                        onValueChange = { dueDate = it },
-                        label = { Text("Date d'échéance (YYYY-MM-DD)") },
-                        modifier = Modifier.fillMaxWidth()
+                    val calendar = Calendar.getInstance()
+                    val datePickerDialog = DatePickerDialog(
+                        context,
+                        { _, year, month, dayOfMonth ->
+                            calendar.set(year, month, dayOfMonth)
+                            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            dueDate = sdf.format(calendar.time)
+                        },
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.DAY_OF_MONTH)
                     )
+
+                    Button(
+                        onClick = { datePickerDialog.show() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (dueDate.isBlank()) "Sélectionner une date d'échéance" else "Échéance : $dueDate")
+                    }
                 }
 
                 if (!isNewTask && selectedTask != null) {

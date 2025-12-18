@@ -186,13 +186,7 @@ fun PreferencesSection(
             SettingsItem(
                 icon = Icons.Default.NotificationsNone,
                 title = "Notifications",
-                trailingContent = {
-                    Switch(
-                        checked = notifications.value,
-                        onCheckedChange = { notifications.value = it }
-                    )
-                },
-                onClick = { notifications.value = !notifications.value }
+                onClick = { navController.navigate("notification_settings") }
             )
         }
     }
@@ -221,7 +215,7 @@ fun SupportSection(navController: NavController) {
                 icon = Icons.Default.Language,
                 title = "Notre Site Web",
                 onClick = {
-                    val url = "https://deepflowia.lovable.app"
+                    val url = "https://deepflow.fr"
                     val intent = Intent(Intent.ACTION_VIEW)
                     intent.data = Uri.parse(url)
                     context.startActivity(intent)
@@ -246,11 +240,7 @@ fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null, // Désactive l'effet d'ondulation
-                onClick = onClick
-            )
+            .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
