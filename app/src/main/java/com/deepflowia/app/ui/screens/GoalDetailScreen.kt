@@ -13,13 +13,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.app.DatePickerDialog
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.deepflowia.app.models.Goal
 import com.deepflowia.app.models.Subobjective
+import com.deepflowia.app.services.ReminderScheduler
 import com.deepflowia.app.viewmodel.GoalViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,12 +33,16 @@ fun GoalDetailScreen(
     goalId: String?,
     goalViewModel: GoalViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val reminderScheduler = remember { ReminderScheduler(context) }
     val selectedGoal by goalViewModel.selectedGoal.collectAsState()
     val isEditing = goalId != null && goalId != "-1"
+    val scope = rememberCoroutineScope()
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
+    var targetDate by remember { mutableStateOf("") }
     var newSubobjectiveTitle by remember { mutableStateOf("") }
 
     var showEditDialog by remember { mutableStateOf(false) }
@@ -54,11 +63,13 @@ fun GoalDetailScreen(
             title = selectedGoal!!.title
             description = selectedGoal!!.description ?: ""
             category = selectedGoal!!.category ?: ""
+            targetDate = selectedGoal!!.targetDate ?: ""
         } else {
             // Reset fields for a new goal
             title = ""
             description = ""
             category = ""
+            targetDate = ""
         }
     }
 
@@ -75,17 +86,37 @@ fun GoalDetailScreen(
                     IconButton(
                         onClick = {
                             if (title.isNotBlank()) {
-                                if (isEditing) {
-                                    val updatedGoal = selectedGoal!!.copy(
+                                scope.launch {
+                                    val goalToSave = Goal(
+                                        id = if (isEditing) selectedGoal?.id else null,
                                         title = title,
-                                        description = description,
-                                        category = category
+                                        description = description.ifBlank { null },
+                                        category = category.ifBlank { null },
+                                        targetDate = targetDate.ifBlank { null },
+                                        userId = "" // Sera défini dans le ViewModel
                                     )
-                                    goalViewModel.updateGoal(updatedGoal)
-                                } else {
-                                    goalViewModel.addGoal(title, description, category)
+
+                                    val newGoalId = if (isEditing) {
+                                        goalViewModel.updateGoal(goalToSave)
+                                        goalToSave.id
+                                    } else {
+                                        goalViewModel.createGoal(goalToSave)
+                                    }
+
+                                    // Planifier ou annuler le rappel
+                                    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                    try {
+                                        val date = sdf.parse(targetDate)
+                                        if (date != null && newGoalId != null) {
+                                            reminderScheduler.scheduleDeadlineReminder(newGoalId, date.time, title)
+                                        }
+                                    } catch (e: Exception) {
+                                        if (newGoalId != null) {
+                                            reminderScheduler.cancelDeadlineReminder(newGoalId)
+                                        }
+                                    }
+                                    navController.navigateUp()
                                 }
-                                navController.navigateUp()
                             }
                         },
                         enabled = title.isNotBlank()
@@ -126,6 +157,27 @@ fun GoalDetailScreen(
                     label = { Text("Catégorie (optionnel)") },
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+            item {
+                val calendar = Calendar.getInstance()
+                val datePickerDialog = DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        calendar.set(year, month, dayOfMonth)
+                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        targetDate = sdf.format(calendar.time)
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+                )
+
+                Button(
+                    onClick = { datePickerDialog.show() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (targetDate.isBlank()) "Sélectionner une date d'échéance" else "Échéance : $targetDate")
+                }
             }
 
             if (isEditing && selectedGoal != null) {

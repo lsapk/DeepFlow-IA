@@ -72,14 +72,16 @@ class TaskViewModel : ViewModel() {
         }
     }
 
-    fun createTask(task: Task) {
-        viewModelScope.launch {
-            val user = SupabaseManager.client.auth.currentUserOrNull()
-            if (user != null) {
-                val newTask = task.copy(userId = user.id)
-                SupabaseManager.client.postgrest.from("tasks").insert(newTask)
-                fetchTasks()
-            }
+    suspend fun createTask(task: Task): String? {
+        val user = SupabaseManager.client.auth.currentUserOrNull() ?: return null
+        return try {
+            val newTask = task.copy(userId = user.id)
+            val result = SupabaseManager.client.postgrest.from("tasks").insert(newTask, returning = "representation").decodeSingle<Task>()
+            fetchTasks()
+            result.id
+        } catch (e: Exception) {
+            // Log error
+            null
         }
     }
 

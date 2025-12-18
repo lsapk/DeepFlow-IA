@@ -129,11 +129,7 @@ fun TaskItem(
         Column {
             Row(
                 modifier = Modifier
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onTaskClicked
-                    )
+                    .clickable(onClick = onTaskClicked)
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

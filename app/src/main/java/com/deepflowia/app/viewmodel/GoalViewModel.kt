@@ -89,23 +89,16 @@ class GoalViewModel : ViewModel() {
         }
     }
 
-    fun addGoal(title: String, description: String?, category: String?) {
-        viewModelScope.launch {
-            val user = SupabaseManager.client.auth.currentUserOrNull()
-            if (user != null) {
-                try {
-                    val goal = Goal(
-                        userId = user.id,
-                        title = title,
-                        description = description,
-                        category = category
-                    )
-                    SupabaseManager.client.postgrest.from("goals").insert(goal)
-                    fetchGoals()
-                } catch (e: Exception) {
-                    Log.e("GoalViewModel", "Erreur lors de l'ajout de l'objectif", e)
-                }
-            }
+    suspend fun createGoal(goal: Goal): String? {
+        val user = SupabaseManager.client.auth.currentUserOrNull() ?: return null
+        return try {
+            val newGoal = goal.copy(userId = user.id)
+            val result = SupabaseManager.client.postgrest.from("goals").insert(newGoal, returning = "representation").decodeSingle<Goal>()
+            fetchGoals()
+            result.id
+        } catch (e: Exception) {
+            Log.e("GoalViewModel", "Erreur lors de la création de l'objectif", e)
+            null
         }
     }
 

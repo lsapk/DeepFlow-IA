@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.deepflowia.app.ui.screens.*
 import com.deepflowia.app.ui.screens.ai.AIScreen
+import com.deepflowia.app.ui.screens.NotificationSettingsScreen
 import com.deepflowia.app.ui.screens.ai.AISelectionScreen
 import com.deepflowia.app.ui.screens.auth.LoginScreen
 import com.deepflowia.app.ui.screens.auth.SignupScreen
@@ -133,6 +134,7 @@ fun NavGraph(
             EditProfileScreen(navController = navController)
         }
         composable("admin_panel") { AdminScreen(navController = navController) }
+        composable("notification_settings") { NotificationSettingsScreen(navController = navController) }
     }
 }
 
