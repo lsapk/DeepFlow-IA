@@ -22,7 +22,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.deepflowia.app.ui.components.StatChip
+import com.deepflowia.app.R
+import com.deepflowia.app.ui.components.ActivityRing
+import com.deepflowia.app.ui.components.glassmorphism
+import com.deepflowia.app.ui.theme.color_blue
+import com.deepflowia.app.ui.theme.color_green
+import com.deepflowia.app.ui.theme.color_orange
+import com.deepflowia.app.ui.theme.color_teal
+import com.deepflowia.app.ui.theme.color_yellow
 import com.deepflowia.app.viewmodel.HomeReportState
 import com.deepflowia.app.viewmodel.HomeViewModel
 
@@ -48,71 +55,87 @@ fun HomeScreen(
     val reportState by homeViewModel.reportState.collectAsState()
 
     val features = listOf(
-        Feature("Tâches", Icons.Filled.List, Color(0xFF6A1B9A), onNavigateToTasks),
-        Feature("Habitudes", Icons.Default.SyncAlt, Color(0xFF0277BD), onNavigateToHabits),
-        Feature("Objectifs", Icons.Default.CheckCircleOutline, Color(0xFF2E7D32), onNavigateToGoals),
-        Feature("Journal", Icons.Default.Book, Color(0xFFD84315), onNavigateToJournal),
-        Feature("Focus", Icons.Default.CenterFocusStrong, Color(0xFFC62828), onNavigateToFocus),
-        Feature("Réflexion", Icons.Default.SelfImprovement, Color(0xFF283593), onNavigateToReflection)
+        Feature("Tâches", Icons.Outlined.Checklist, Color(0xFF0A84FF), onNavigateToTasks),
+        Feature("Habitudes", Icons.Outlined.AllInclusive, Color(0xFF34C759), onNavigateToHabits),
+        Feature("Objectifs", Icons.Outlined.Flag, Color(0xFFFF9500), onNavigateToGoals),
+        Feature("Journal", Icons.Outlined.AutoStories, Color(0xFFFF3B30), onNavigateToJournal),
+        Feature("Focus", Icons.Outlined.Tune, Color(0xFF5856D6), onNavigateToFocus),
+        Feature("Réflexion", Icons.Outlined.Psychology, Color(0xFFFF2D55), onNavigateToReflection)
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Accueil", fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = onNavigateToProfile) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profil",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.mesh_background), // Assurez-vous d'avoir une image de fond
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Accueil", fontWeight = FontWeight.Bold) },
+                    actions = {
+                        IconButton(onClick = onNavigateToProfile) {
+                            Icon(
+                                imageVector = Icons.Outlined.AccountCircle,
+                                contentDescription = "Profil",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent // Fond transparent
+                    )
                 )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-        ) {
-            ReportCard(state = reportState)
-            Spacer(modifier = Modifier.height(24.dp))
-            FeaturesGrid(features = features, modifier = Modifier.weight(1f))
+            },
+            containerColor = Color.Transparent, // Fond transparent
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+            ) {
+                ReportSection(state = reportState)
+                Spacer(modifier = Modifier.height(24.dp))
+                FeaturesGrid(features = features, modifier = Modifier.weight(1f))
+            }
         }
     }
 }
 
 @Composable
-fun ReportCard(state: HomeReportState) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Rapport",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+fun ReportSection(state: HomeReportState) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Rapport Quotidien",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ActivityRing(
+                progress = (state.focusMinutesToday / 60f).coerceIn(0f, 1f),
+                label = "Focus",
+                value = "${state.focusMinutesToday}m",
+                gradient = listOf(color_orange, color_yellow)
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                StatChip("Focus", "${state.focusMinutesToday} min")
-                StatChip("Tâches", "${state.tasksCompletedToday} terminées")
-                StatChip("Habitudes", "${state.habitsCompletedToday} faites")
-            }
+            ActivityRing(
+                progress = (state.tasksCompletedToday / 5f).coerceIn(0f, 1f),
+                label = "Tâches",
+                value = "${state.tasksCompletedToday}",
+                gradient = listOf(color_blue, color_teal)
+            )
+            ActivityRing(
+                progress = (state.habitsCompletedToday / 5f).coerceIn(0f, 1f),
+                label = "Habitudes",
+                value = "${state.habitsCompletedToday}",
+                gradient = listOf(color_green, color_green.copy(alpha = 0.7f))
+            )
         }
     }
 }
@@ -124,24 +147,24 @@ fun FeaturesGrid(features: List<Feature>, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.5f), // Ligne plus grande
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             FeatureCard(feature = features[0], modifier = Modifier.weight(1f))
             FeatureCard(feature = features[1], modifier = Modifier.weight(1f))
         }
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f), // Ligne plus petite
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             FeatureCard(feature = features[2], modifier = Modifier.weight(1f))
             FeatureCard(feature = features[3], modifier = Modifier.weight(1f))
+            FeatureCard(feature = features[4], modifier = Modifier.weight(1f))
         }
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f), // Ligne plus petite
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            FeatureCard(feature = features[4], modifier = Modifier.weight(1f))
             FeatureCard(feature = features[5], modifier = Modifier.weight(1f))
         }
     }
@@ -150,15 +173,13 @@ fun FeaturesGrid(features: List<Feature>, modifier: Modifier = Modifier) {
 @Composable
 fun FeatureCard(feature: Feature, modifier: Modifier = Modifier) {
     val interactionSource = remember { MutableInteractionSource() }
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    Box(
         modifier = modifier
             .fillMaxHeight()
+            .glassmorphism()
             .clickable(
                 interactionSource = interactionSource,
-                indication = null, // Désactive l'effet d'ondulation
+                indication = null,
                 onClick = feature.onClick
             )
     ) {
@@ -166,28 +187,18 @@ fun FeatureCard(feature: Feature, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.Start
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(feature.color.copy(alpha = 0.1f))
-            ) {
-                Icon(
-                    imageVector = feature.icon,
-                    contentDescription = feature.title,
-                    tint = feature.color,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
+            Icon(
+                imageVector = feature.icon,
+                contentDescription = feature.title,
+                tint = feature.color,
+                modifier = Modifier.size(32.dp)
+            )
             Text(
                 text = feature.title,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
