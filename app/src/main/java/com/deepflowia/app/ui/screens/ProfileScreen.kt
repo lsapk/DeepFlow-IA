@@ -241,7 +241,11 @@ fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null, // Désactive l'effet d'ondulation
+                onClick = onClick
+            )
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
