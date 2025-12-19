@@ -2,6 +2,8 @@ package com.deepflowia.app.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -10,36 +12,32 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Brightness4
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.MailOutline
-import androidx.compose.material.icons.outlined.NotificationsNone
-import androidx.compose.material.icons.outlined.ReceiptLong
-import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.deepflowia.app.viewmodel.AIViewModel
+import com.deepflowia.app.R
+import com.deepflowia.app.ui.components.glassmorphism
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
-import com.deepflowia.app.ui.theme.color_green
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,128 +45,115 @@ fun ProfileScreen(
     navController: NavController,
     authViewModel: AuthViewModel = viewModel(),
     themeViewModel: ThemeViewModel = viewModel(),
-    aiViewModel: AIViewModel = viewModel(),
     onNavigateToLogin: () -> Unit
 ) {
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
-    val notifications = remember { mutableStateOf(true) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Paramètres & Profil", fontWeight = FontWeight.Bold) },
+                title = { Text("Profil & Paramètres", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.Transparent
                 )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-        ) {
-            ProfileHeader()
-            Spacer(modifier = Modifier.height(24.dp))
-            Column(Modifier.padding(horizontal = 16.dp)) {
-                AccountSection(navController)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = R.drawable.mesh_background),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                ProfileHeader(authViewModel)
                 Spacer(modifier = Modifier.height(24.dp))
-                PreferencesSection(navController, isDarkTheme, { themeViewModel.toggleTheme() }, notifications)
-                Spacer(modifier = Modifier.height(24.dp))
-                AdminSection(navController, authViewModel)
+
+                AccountSection(navController, authViewModel)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                PreferencesSection(navController, isDarkTheme, { themeViewModel.toggleTheme() })
+                Spacer(modifier = Modifier.height(16.dp))
+
                 SupportSection(navController)
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
                 LogoutButton(
+                    modifier = Modifier.padding(vertical = 24.dp),
                     onClick = {
                         authViewModel.signOut()
                         onNavigateToLogin()
                     }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
 @Composable
-fun AdminSection(navController: NavController, authViewModel: AuthViewModel) {
-    val userRole by authViewModel.userRole.collectAsState()
-
-    if (userRole == "admin") {
-        Column {
-            Text(
-                "ADMINISTRATION",
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                SettingsItem(
-                    icon = Icons.Outlined.Security,
-                    title = "Panneau d'administration",
-                    onClick = { navController.navigate("admin_panel") }
-                )
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-    }
-}
-
-@Composable
-fun ProfileHeader(authViewModel: AuthViewModel = viewModel()) {
+fun ProfileHeader(authViewModel: AuthViewModel) {
     val userEmail by authViewModel.userEmail.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 32.dp),
+            .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+            contentDescription = "Avatar de l'utilisateur",
             modifier = Modifier
-                .size(100.dp)
+                .size(120.dp)
                 .clip(CircleShape)
-                .shadow(
-                    elevation = 16.dp,
-                    shape = CircleShape,
-                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                    ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                )
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.AccountCircle,
-                contentDescription = "Avatar",
-                modifier = Modifier.fillMaxSize(),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+        )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = userEmail ?: "Utilisateur",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "DeepFlow IA Pro",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
 
 @Composable
-fun AccountSection(navController: NavController) {
-    SettingsGroup(title = "COMPTE") {
+fun AccountSection(navController: NavController, authViewModel: AuthViewModel) {
+    val userRole by authViewModel.userRole.collectAsState()
+
+    SettingsCard(title = "Compte") {
         SettingsItem(
-            icon = Icons.Outlined.Edit,
+            icon = Icons.Outlined.AccountCircle,
             title = "Modifier le profil",
             onClick = { navController.navigate("edit_profile") }
         )
+        if (userRole == "admin") {
+            Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+            SettingsItem(
+                icon = Icons.Filled.AdminPanelSettings,
+                title = "Panneau d'administration",
+                onClick = { navController.navigate("admin_panel") }
+            )
+        }
     }
 }
 
@@ -176,31 +161,29 @@ fun AccountSection(navController: NavController) {
 fun PreferencesSection(
     navController: NavController,
     isDarkTheme: Boolean,
-    onThemeToggle: () -> Unit,
-    notifications: MutableState<Boolean>
+    onThemeToggle: () -> Unit
 ) {
-    SettingsGroup(title = "PRÉFÉRENCES DE L'APPLICATION") {
+    SettingsCard(title = "Préférences") {
         SettingsItem(
-            icon = Icons.Outlined.Brightness4,
+            icon = Icons.Outlined.DarkMode,
             title = "Mode sombre",
             trailingContent = {
                 Switch(
                     checked = isDarkTheme,
                     onCheckedChange = { onThemeToggle() },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = color_green,
-                        uncheckedThumbColor = Color.White,
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
                         uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        uncheckedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             },
             onClick = { onThemeToggle() }
         )
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
         SettingsItem(
-            icon = Icons.Outlined.NotificationsNone,
+            icon = Icons.Outlined.Notifications,
             title = "Notifications",
             onClick = { navController.navigate("notification_settings") }
         )
@@ -210,50 +193,64 @@ fun PreferencesSection(
 @Composable
 fun SupportSection(navController: NavController) {
     val context = LocalContext.current
-    SettingsGroup(title = "SUPPORT") {
-        SettingsItem(icon = Icons.Outlined.HelpOutline, title = "Aide/FAQ", onClick = { navController.navigate("help") })
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
-        SettingsItem(icon = Icons.Outlined.MailOutline, title = "Contact", onClick = {
-            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:Deepflow.ia@gmail.com")
+    SettingsCard("Support & Infos") {
+        SettingsItem(
+            icon = Icons.Outlined.HelpOutline,
+            title = "Aide & FAQ",
+            onClick = { navController.navigate("help") }
+        )
+        Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+        SettingsItem(
+            icon = Icons.Outlined.MailOutline,
+            title = "Nous contacter",
+            onClick = {
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("mailto:Deepflow.ia@gmail.com")
+                }
+                context.startActivity(intent)
             }
-            context.startActivity(intent)
-        })
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        )
+        Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
         SettingsItem(
             icon = Icons.Outlined.Language,
             title = "Notre Site Web",
             onClick = {
-                val url = "https://deepflow.fr"
+                val url = "https://deepflowia.lovable.app/"
                 val intent = Intent(Intent.ACTION_VIEW)
                 intent.data = Uri.parse(url)
                 context.startActivity(intent)
             }
         )
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
-        SettingsItem(icon = Icons.Outlined.ReceiptLong, title = "Conditions d'utilisation", onClick = { navController.navigate("terms") })
+        Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+        SettingsItem(
+            icon = Icons.AutoMirrored.Filled.ReceiptLong,
+            title = "Conditions d'utilisation",
+            onClick = { navController.navigate("terms") }
+        )
     }
 }
 
 @Composable
-fun SettingsGroup(
+fun SettingsCard(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column {
         Text(
-            text = title,
+            text = title.uppercase(),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
         )
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surface
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .glassmorphism(
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)
+                )
         ) {
-            Column {
-                content()
-            }
+            content()
         }
     }
 }
@@ -263,7 +260,11 @@ fun SettingsItem(
     icon: ImageVector,
     title: String,
     trailingContent: @Composable (() -> Unit)? = {
-        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(
+            Icons.Outlined.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
     },
     onClick: () -> Unit
 ) {
@@ -273,29 +274,50 @@ fun SettingsItem(
             .fillMaxWidth()
             .clickable(
                 interactionSource = interactionSource,
-                indication = null, // Désactive l'effet d'ondulation
+                indication = null,
                 onClick = onClick
             )
-            .padding(16.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(title, modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         trailingContent?.let { it() }
     }
 }
 
+
 @Composable
-fun LogoutButton(onClick: () -> Unit) {
+fun LogoutButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)) // Garder une couleur distincte pour la déconnexion
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+            contentColor = MaterialTheme.colorScheme.error
+        ),
+        elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp)
     ) {
-        Icon(Icons.Filled.ExitToApp, contentDescription = null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Se déconnecter", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Déconnexion")
+            Spacer(modifier = Modifier.width(12.dp))
+            Text("Se déconnecter", fontWeight = FontWeight.Bold)
+        }
     }
 }

@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 fun Modifier.glassmorphism(
     shape: Shape,
     color: Color,
-    blurRadius: Float = 25f
+    blurRadius: Float = 10f
 ): Modifier = composed {
     val glassmorphismModifier = this.then(
         Modifier
