@@ -14,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +29,7 @@ import android.net.Uri
 import com.deepflowia.app.viewmodel.AIViewModel
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
+import com.deepflowia.app.ui.theme.color_green
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -122,39 +125,43 @@ fun ProfileHeader(authViewModel: AuthViewModel = viewModel()) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp),
+            .padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
-            contentDescription = "Avatar",
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .shadow(
+                    elevation = 16.dp,
+                    shape = CircleShape,
+                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                    ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AccountCircle,
+                contentDescription = "Avatar",
+                modifier = Modifier.fillMaxSize(),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = userEmail ?: "Utilisateur",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleLarge
         )
     }
 }
 
 @Composable
 fun AccountSection(navController: NavController) {
-    Column {
-        Text("COMPTE", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            SettingsItem(
-                icon = Icons.Default.Edit,
-                title = "Modifier le profil",
-                onClick = { navController.navigate("edit_profile") }
-            )
-        }
+    SettingsGroup(title = "COMPTE") {
+        SettingsItem(
+            icon = Icons.Outlined.Edit,
+            title = "Modifier le profil",
+            onClick = { navController.navigate("edit_profile") }
+        )
     }
 }
 
@@ -165,65 +172,81 @@ fun PreferencesSection(
     onThemeToggle: () -> Unit,
     notifications: MutableState<Boolean>
 ) {
-    Column {
-        Text("PRÉFÉRENCES DE L'APPLICATION", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            SettingsItem(
-                icon = Icons.Default.Brightness4,
-                title = "Mode sombre",
-                trailingContent = {
-                    Switch(
-                        checked = isDarkTheme,
-                        onCheckedChange = { onThemeToggle() }
+    SettingsGroup(title = "PRÉFÉRENCES DE L'APPLICATION") {
+        SettingsItem(
+            icon = Icons.Outlined.Brightness4,
+            title = "Mode sombre",
+            trailingContent = {
+                Switch(
+                    checked = isDarkTheme,
+                    onCheckedChange = { onThemeToggle() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = color_green,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                },
-                onClick = { onThemeToggle() }
-            )
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-            SettingsItem(
-                icon = Icons.Default.NotificationsNone,
-                title = "Notifications",
-                onClick = { navController.navigate("notification_settings") }
-            )
-        }
+                )
+            },
+            onClick = { onThemeToggle() }
+        )
+        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        SettingsItem(
+            icon = Icons.Outlined.NotificationsNone,
+            title = "Notifications",
+            onClick = { navController.navigate("notification_settings") }
+        )
     }
 }
 
 @Composable
 fun SupportSection(navController: NavController) {
     val context = LocalContext.current
-    Column {
-        Text("SUPPORT", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            SettingsItem(icon = Icons.Filled.HelpOutline, title = "Aide/FAQ", onClick = { navController.navigate("help") })
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-            SettingsItem(icon = Icons.Default.MailOutline, title = "Contact", onClick = {
-                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:Deepflow.ia@gmail.com")
-                }
+    SettingsGroup(title = "SUPPORT") {
+        SettingsItem(icon = Icons.Outlined.HelpOutline, title = "Aide/FAQ", onClick = { navController.navigate("help") })
+        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        SettingsItem(icon = Icons.Outlined.MailOutline, title = "Contact", onClick = {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:Deepflow.ia@gmail.com")
+            }
+            context.startActivity(intent)
+        })
+        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        SettingsItem(
+            icon = Icons.Outlined.Language,
+            title = "Notre Site Web",
+            onClick = {
+                val url = "https://deepflow.fr"
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.data = Uri.parse(url)
                 context.startActivity(intent)
-            })
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-            SettingsItem(
-                icon = Icons.Default.Language,
-                title = "Notre Site Web",
-                onClick = {
-                    val url = "https://deepflow.fr"
-                    val intent = Intent(Intent.ACTION_VIEW)
-                    intent.data = Uri.parse(url)
-                    context.startActivity(intent)
-                }
-            )
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-            SettingsItem(icon = Icons.Filled.ReceiptLong, title = "Conditions d'utilisation", onClick = { navController.navigate("terms") })
+            }
+        )
+        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        SettingsItem(icon = Icons.Outlined.ReceiptLong, title = "Conditions d'utilisation", onClick = { navController.navigate("terms") })
+    }
+}
+
+@Composable
+fun SettingsGroup(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column {
+                content()
+            }
         }
     }
 }
