@@ -1,5 +1,7 @@
 package com.deepflowia.app.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -8,8 +10,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Brightness4
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.MailOutline
+import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,15 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import android.content.Intent
-import android.net.Uri
 import com.deepflowia.app.viewmodel.AIViewModel
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.ThemeViewModel
 import com.deepflowia.app.ui.theme.color_green
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,7 +115,7 @@ fun AdminSection(navController: NavController, authViewModel: AuthViewModel) {
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 SettingsItem(
-                    icon = Icons.Default.Security,
+                    icon = Icons.Outlined.Security,
                     title = "Panneau d'administration",
                     onClick = { navController.navigate("admin_panel") }
                 )
@@ -256,7 +263,7 @@ fun SettingsItem(
     icon: ImageVector,
     title: String,
     trailingContent: @Composable (() -> Unit)? = {
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     },
     onClick: () -> Unit
 ) {
