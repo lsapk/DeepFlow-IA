@@ -127,9 +127,16 @@ fun TaskItem(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
+            // TODO: Désactiver l'indication (effet d'ondulation) pour éviter un crash causé par une
+            // incompatibilité entre les versions des bibliothèques Compose. La solution à long terme
+            // est de mettre à jour les dépendances vers des versions compatibles.
             Row(
                 modifier = Modifier
-                    .clickable(onClick = onTaskClicked)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onTaskClicked
+                    )
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
