@@ -54,7 +54,10 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(80.dp)
-                        .glassmorphism(shape = RoundedCornerShape(28.dp)),
+                        .glassmorphism(
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
                     containerColor = Color.Transparent
                 ) {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
