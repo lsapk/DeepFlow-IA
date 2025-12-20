@@ -2,9 +2,11 @@ package com.deepflowia.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -47,7 +49,8 @@ class HomeViewModel : ViewModel() {
             tasksCompletedToday = tasksCompletedToday,
             habitsCompletedToday = habitCompletions.size
         )
-    }.stateIn(
+    }.flowOn(Dispatchers.Default) // Exécute le 'combine' sur un thread d'arrière-plan
+    .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HomeReportState()
