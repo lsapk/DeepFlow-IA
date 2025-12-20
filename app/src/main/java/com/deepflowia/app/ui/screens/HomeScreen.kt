@@ -64,14 +64,16 @@ fun HomeScreen(
 ) {
     val reportState by homeViewModel.reportState.collectAsState()
 
-    val features = listOf(
-        Feature("Tâches", Icons.Outlined.Checklist, Color(0xFF0A84FF), onNavigateToTasks),
-        Feature("Habitudes", Icons.Outlined.AllInclusive, Color(0xFF34C759), onNavigateToHabits),
-        Feature("Objectifs", Icons.Outlined.Flag, Color(0xFFFF9500), onNavigateToGoals),
-        Feature("Journal", Icons.Outlined.AutoStories, Color(0xFFFF3B30), onNavigateToJournal),
-        Feature("Focus", Icons.Outlined.Tune, Color(0xFF5856D6), onNavigateToFocus),
-        Feature("Réflexion", Icons.Outlined.Psychology, Color(0xFFFF2D55), onNavigateToReflection)
-    )
+    val features = remember {
+        listOf(
+            Feature("Tâches", Icons.Outlined.Checklist, Color(0xFF0A84FF), onNavigateToTasks),
+            Feature("Habitudes", Icons.Outlined.AllInclusive, Color(0xFF34C759), onNavigateToHabits),
+            Feature("Objectifs", Icons.Outlined.Flag, Color(0xFFFF9500), onNavigateToGoals),
+            Feature("Journal", Icons.Outlined.AutoStories, Color(0xFFFF3B30), onNavigateToJournal),
+            Feature("Focus", Icons.Outlined.Tune, Color(0xFF5856D6), onNavigateToFocus),
+            Feature("Réflexion", Icons.Outlined.Psychology, Color(0xFFFF2D55), onNavigateToReflection)
+        )
+    }
 
     Scaffold(
         topBar = {
