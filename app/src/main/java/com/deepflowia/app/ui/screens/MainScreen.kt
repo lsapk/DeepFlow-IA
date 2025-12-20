@@ -18,6 +18,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.deepflowia.app.data.GoogleAuthHandler
 import com.deepflowia.app.navigation.BottomNavItem
 import com.deepflowia.app.navigation.NavGraph
 import com.deepflowia.app.ui.components.glassmorphism
@@ -27,7 +28,8 @@ import com.deepflowia.app.viewmodel.ThemeViewModel
 @Composable
 fun MainScreen(
     themeViewModel: ThemeViewModel,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    googleAuthHandler: GoogleAuthHandler
 ) {
     val navController = rememberNavController()
     val userRole by authViewModel.userRole.collectAsState()
@@ -41,49 +43,54 @@ fun MainScreen(
         items.add(BottomNavItem.Admin)
     }
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    val bottomBarVisible = currentDestination?.route !in listOf("loading", "auth")
+
     Scaffold(
         bottomBar = {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(28.dp),
-                color = Color.Transparent // La couleur sera gérée par le glassmorphism
-            ) {
-                NavigationBar(
+            if (bottomBarVisible) {
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(80.dp)
-                        .glassmorphism(
-                            shape = RoundedCornerShape(28.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        ),
-                    containerColor = Color.Transparent
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = Color.Transparent // La couleur sera gérée par le glassmorphism
                 ) {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentDestination = navBackStackEntry?.destination
-                    items.forEach { screen ->
-                        NavigationBarItem(
-                            icon = { Icon(imageVector = screen.icon, contentDescription = null) },
-                            label = { Text(screen.title) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                    NavigationBar(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                            .glassmorphism(
+                                shape = RoundedCornerShape(28.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                        containerColor = Color.Transparent
+                    ) {
+                        items.forEach { screen ->
+                            NavigationBarItem(
+                                icon = { Icon(imageVector = screen.icon, contentDescription = null) },
+                                label = { Text(screen.title) },
+                                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                                onClick = {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                indicatorColor = Color.Transparent
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    indicatorColor = Color.Transparent
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -91,7 +98,11 @@ fun MainScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            NavGraph(navController = navController, themeViewModel = themeViewModel)
+            NavGraph(
+                navController = navController,
+                themeViewModel = themeViewModel,
+                googleAuthHandler = googleAuthHandler
+            )
         }
     }
 }

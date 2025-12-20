@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">DeepFlow-IA</string>
+
+    <!-- AuthScreen -->
+    <string name="auth_welcome_title">DeepFlow IA</string>
+    <string name="auth_welcome_subtitle_signin">Bienvenue ! Connectez-vous pour continuer.</string>
+    <string name="auth_welcome_subtitle_signup">Créez un compte pour commencer.</string>
+    <string name="auth_tab_signin">Connexion</string>
+    <string name="auth_tab_signup">Inscription</string>
+    <string name="auth_email_label">Adresse e-mail</string>
+    <string name="auth_password_label">Mot de passe</string>
+    <string name="auth_button_signin">Se connecter</string>
+    <string name="auth_button_signup">S\'inscrire</string>
+    <string name="auth_button_google">Continuer avec Google</string>
 </resources>

@@ -45,8 +45,7 @@ import com.deepflowia.app.viewmodel.ThemeViewModel
 fun ProfileScreen(
     navController: NavController,
     authViewModel: AuthViewModel = viewModel(),
-    themeViewModel: ThemeViewModel = viewModel(),
-    onNavigateToLogin: () -> Unit
+    themeViewModel: ThemeViewModel = viewModel()
 ) {
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
 
@@ -89,7 +88,6 @@ fun ProfileScreen(
                 modifier = Modifier.padding(vertical = 24.dp),
                 onClick = {
                     authViewModel.signOut()
-                    onNavigateToLogin()
                 }
             )
         }
