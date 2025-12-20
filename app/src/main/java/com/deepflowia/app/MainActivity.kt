@@ -15,6 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import com.deepflowia.app.data.GoogleAuthHandler
 import com.deepflowia.app.ui.screens.MainScreen
 import com.deepflowia.app.ui.theme.DeepFlowIATheme
 import com.deepflowia.app.viewmodel.AuthViewModel
@@ -24,6 +25,16 @@ class MainActivity : ComponentActivity() {
 
     private val themeViewModel: ThemeViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
+    private lateinit var googleAuthHandler: GoogleAuthHandler
+
+    private val googleSignInLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            googleAuthHandler.handleSignInResult(
+                data = result.data,
+                onSuccess = { idToken -> authViewModel.signInWithGoogle(idToken) },
+                onError = { message -> authViewModel.signInFailed(message) }
+            )
+        }
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -45,6 +56,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        googleAuthHandler = GoogleAuthHandler(this, googleSignInLauncher)
         askNotificationPermission()
 
         setContent {
@@ -55,7 +67,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(themeViewModel = themeViewModel, authViewModel = authViewModel)
+                    MainScreen(
+                        themeViewModel = themeViewModel,
+                        authViewModel = authViewModel,
+                        googleAuthHandler = googleAuthHandler
+                    )
                 }
             }
         }

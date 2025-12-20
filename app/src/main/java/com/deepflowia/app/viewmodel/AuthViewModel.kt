@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.UserRole
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
@@ -138,6 +139,26 @@ class AuthViewModel : ViewModel() {
                 onError(e.message ?: "Une erreur est survenue")
             }
         }
+    }
+
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            Log.d("AuthViewModel", "Tentative de connexion avec Google.")
+            _authState.value = AuthState.Loading
+            try {
+                SupabaseManager.client.auth.signInWith(Google) {
+                    this.idToken = idToken
+                }
+                // L'état SignedIn sera mis à jour automatiquement par le collecteur sessionStatus
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.message ?: "Une erreur est survenue lors de la connexion avec Google")
+                Log.e("AuthViewModel", "Échec de la connexion avec Google.", e)
+            }
+        }
+    }
+
+    fun signInFailed(errorMessage: String) {
+        _authState.value = AuthState.Error(errorMessage)
     }
 }
 

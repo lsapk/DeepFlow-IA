@@ -17,8 +17,8 @@ import com.deepflowia.app.ui.screens.*
 import com.deepflowia.app.ui.screens.ai.AIScreen
 import com.deepflowia.app.ui.screens.NotificationSettingsScreen
 import com.deepflowia.app.ui.screens.ai.AISelectionScreen
-import com.deepflowia.app.ui.screens.auth.LoginScreen
-import com.deepflowia.app.ui.screens.auth.SignupScreen
+import com.deepflowia.app.data.GoogleAuthHandler
+import com.deepflowia.app.ui.screens.auth.AuthScreen
 import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.AuthState
 import com.deepflowia.app.viewmodel.ThemeViewModel
@@ -27,48 +27,42 @@ import com.deepflowia.app.viewmodel.ThemeViewModel
 fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel = viewModel(),
-    themeViewModel: ThemeViewModel
+    themeViewModel: ThemeViewModel,
+    googleAuthHandler: GoogleAuthHandler
 ) {
     val authState by authViewModel.authState.collectAsState()
 
-    LaunchedEffect(authState) {
-        if(navController.currentDestination?.route == "loading") {
-            when (authState) {
-                is AuthState.SignedIn -> {
+    LaunchedEffect(authState, navController) {
+        when (authState) {
+            is AuthState.SignedIn -> {
+                if (navController.currentDestination?.route == "loading" ||
+                    navController.currentDestination?.route == "auth") {
                     navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("loading") { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                     }
                 }
-                is AuthState.SignedOut -> {
-                    navController.navigate("login") {
-                        popUpTo("loading") { inclusive = true }
-                    }
-                }
-                else -> Unit
             }
+            is AuthState.SignedOut -> {
+                if (navController.currentDestination?.route != "auth") {
+                    navController.navigate("auth") {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                }
+            }
+            else -> Unit // Gère Initializing et Loading
         }
     }
 
     NavHost(navController = navController, startDestination = "loading") {
         composable("loading") { LoadingScreen() }
-        composable("login") {
-            LoginScreen(
-                onLoginSuccess = {
+        composable("auth") {
+            AuthScreen(
+                onAuthSuccess = {
                     navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("login") { inclusive = true }
+                        popUpTo("auth") { inclusive = true }
                     }
                 },
-                onNavigateToSignup = { navController.navigate("signup") }
-            )
-        }
-        composable("signup") {
-            SignupScreen(
-                onSignupSuccess = {
-                    navController.navigate(BottomNavItem.Home.route) {
-                        popUpTo("signup") { inclusive = true }
-                    }
-                },
-                onNavigateToLogin = { navController.navigate("login") }
+                googleAuthHandler = googleAuthHandler
             )
         }
         composable(BottomNavItem.Home.route) {
@@ -111,12 +105,7 @@ fun NavGraph(
         composable(BottomNavItem.Profile.route) {
             ProfileScreen(
                 navController = navController,
-                themeViewModel = themeViewModel,
-                onNavigateToLogin = {
-                    navController.navigate("login") {
-                        popUpTo(BottomNavItem.Home.route) { inclusive = true }
-                    }
-                }
+                themeViewModel = themeViewModel
             )
         }
         composable("help") { HelpScreen(navController = navController) }
