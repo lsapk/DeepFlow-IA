@@ -7,6 +7,7 @@ import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.UserRole
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.IDToken
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.postgrest
@@ -141,13 +142,14 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun signInWithGoogle(idToken: String) {
+    fun signInWithGoogle(idTokenValue: String) {
         viewModelScope.launch {
             Log.d("AuthViewModel", "Tentative de connexion avec Google.")
             _authState.value = AuthState.Loading
             try {
-                SupabaseManager.client.auth.signInWith(Google) {
-                    this.idToken = idToken
+                SupabaseManager.client.auth.signInWith(IDToken) {
+                    idToken = idTokenValue
+                    provider = Google
                 }
                 // L'état SignedIn sera mis à jour automatiquement par le collecteur sessionStatus
             } catch (e: Exception) {
