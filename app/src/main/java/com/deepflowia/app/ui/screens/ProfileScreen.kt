@@ -59,46 +59,38 @@ fun ProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            Image(
-                painter = painterResource(id = R.drawable.mesh_background),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            ProfileHeader(authViewModel)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            AccountSection(navController, authViewModel)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PreferencesSection(navController, isDarkTheme, { themeViewModel.toggleTheme() })
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SupportSection(navController)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LogoutButton(
+                modifier = Modifier.padding(vertical = 24.dp),
+                onClick = {
+                    authViewModel.signOut()
+                    onNavigateToLogin()
+                }
             )
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                ProfileHeader(authViewModel)
-                Spacer(modifier = Modifier.height(24.dp))
-
-                AccountSection(navController, authViewModel)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                PreferencesSection(navController, isDarkTheme, { themeViewModel.toggleTheme() })
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SupportSection(navController)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LogoutButton(
-                    modifier = Modifier.padding(vertical = 24.dp),
-                    onClick = {
-                        authViewModel.signOut()
-                        onNavigateToLogin()
-                    }
-                )
-            }
         }
     }
 }
@@ -119,7 +111,6 @@ fun ProfileHeader(authViewModel: AuthViewModel) {
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -245,10 +236,8 @@ fun SettingsCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .glassmorphism(
-                    shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)
-                )
+                .shadow(elevation = 4.dp, shape = RoundedCornerShape(28.dp), clip = true)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
             content()
         }
