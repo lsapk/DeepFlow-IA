@@ -12,13 +12,11 @@ import androidx.compose.ui.unit.dp
 
 fun Modifier.glassmorphism(
     shape: Shape,
-    color: Color,
-    blurRadius: Dp = 8.dp
+    color: Color
 ): Modifier = composed {
     this.then(
         Modifier
             .clip(shape)
             .background(color)
-            .blur(radius = blurRadius)
     )
 }
