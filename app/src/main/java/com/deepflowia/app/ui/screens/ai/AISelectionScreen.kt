@@ -31,35 +31,27 @@ import com.deepflowia.app.ui.components.glassmorphism
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AISelectionScreen(navController: NavController) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = R.drawable.mesh_background),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Fonctionnalités IA") },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.navigateUp() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                    )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Fonctionnalités IA") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
-            },
-            containerColor = Color.Transparent
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
                     .padding(paddingValues)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -116,33 +108,13 @@ fun FeatureCard(
     enabled: Boolean = true
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val cardColor = if (enabled) {
-        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-    } else {
-        Color.Transparent // Pas de couleur de fond pour la carte désactivée
-    }
 
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .glassmorphism(
-                shape = MaterialTheme.shapes.large,
-                color = cardColor
-            )
-            .let {
-                if (!enabled) {
-                    it.background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF6A11CB).copy(alpha = 0.3f),
-                                Color(0xFF2575FC).copy(alpha = 0.3f)
-                            )
-                        )
-                    )
-                } else {
-                    it
-                }
-            }
+            .shadow(elevation = 8.dp, shape = MaterialTheme.shapes.large, clip = true)
+            .background(MaterialTheme.colorScheme.surface)
+            .alpha(if (enabled) 1f else 0.5f)
             .clickable(
                 enabled = enabled,
                 interactionSource = interactionSource,

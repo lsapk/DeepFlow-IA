@@ -72,44 +72,35 @@ fun HomeScreen(
         Feature("Réflexion", Icons.Outlined.Psychology, Color(0xFFFF2D55), onNavigateToReflection)
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = R.drawable.mesh_background), // Assurez-vous d'avoir une image de fond
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Accueil", fontWeight = FontWeight.Bold) },
-                    actions = {
-                        IconButton(onClick = onNavigateToProfile) {
-                            Icon(
-                                imageVector = Icons.Outlined.AccountCircle,
-                                contentDescription = "Profil",
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent // Fond transparent
-                    )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Accueil", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold)) },
+                actions = {
+                    IconButton(onClick = onNavigateToProfile) {
+                        Icon(
+                            imageVector = Icons.Outlined.AccountCircle,
+                            contentDescription = "Profil",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
-            },
-            containerColor = Color.Transparent, // Fond transparent
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp)
-            ) {
-                ReportSection(state = reportState)
-                Spacer(modifier = Modifier.height(24.dp))
-                FeaturesGrid(features = features, modifier = Modifier.weight(1f))
-            }
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            ReportSection(state = reportState)
+            Spacer(modifier = Modifier.height(24.dp))
+            FeaturesGrid(features = features, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -119,7 +110,7 @@ fun ReportSection(state: HomeReportState) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Rapport Quotidien",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -185,10 +176,8 @@ fun FeatureCard(feature: Feature, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .glassmorphism(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-            )
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(28.dp), clip = true)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
