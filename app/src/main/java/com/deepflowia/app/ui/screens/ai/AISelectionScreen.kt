@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -96,7 +97,6 @@ fun AISelectionScreen(navController: NavController) {
             }
         }
     }
-}
 
 @Composable
 fun FeatureCard(
@@ -114,7 +114,7 @@ fun FeatureCard(
             .fillMaxHeight()
             .shadow(elevation = 8.dp, shape = MaterialTheme.shapes.large, clip = true)
             .background(MaterialTheme.colorScheme.surface)
-            .alpha(if (enabled) 1f else 0.5f)
+            .graphicsLayer { alpha = if (enabled) 1f else 0.5f }
             .clickable(
                 enabled = enabled,
                 interactionSource = interactionSource,
