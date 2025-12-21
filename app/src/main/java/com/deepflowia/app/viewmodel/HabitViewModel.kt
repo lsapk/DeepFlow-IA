@@ -21,9 +21,9 @@ import java.util.Locale
 class HabitViewModel : ViewModel() {
 
     private val _allHabits = MutableStateFlow<List<Habit>>(emptyList())
-    val allHabits: StateFlow<List<Habit>> get() = _allHabits
+    val allHabits: StateFlow<List<Habit>> = _allHabits
 
-    val filteredHabits: StateFlow<List<Habit>> get() = _filteredHabits
+    private val _filteredHabits: StateFlow<List<Habit>>
 
     private val _habitCompletions = MutableStateFlow<Set<String>>(emptySet())
     val habitCompletions: StateFlow<Set<String>> = _habitCompletions
@@ -34,27 +34,28 @@ class HabitViewModel : ViewModel() {
     private val _showAllHabits = MutableStateFlow(false)
     val showAllHabits: StateFlow<Boolean> = _showAllHabits
 
-    private val _filteredHabits = combine(_allHabits, _showArchived, _showAllHabits) { allHabits, showArchived, showAll ->
-        if (showAll) {
-            allHabits.filter { it.isArchived == showArchived }
-        } else {
-            val calendar = Calendar.getInstance()
-            // Notre logique: Lundi = 1, Mardi = 2, ..., Dimanche = 7
-            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-            val today = if (dayOfWeek == Calendar.SUNDAY) 7 else dayOfWeek - 1
-
-            allHabits.filter { habit ->
-                val appearsToday = habit.daysOfWeek.isNullOrEmpty() || habit.daysOfWeek.contains(today)
-                habit.isArchived == showArchived && appearsToday
-            }
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-
     init {
+        _filteredHabits = combine(_allHabits, _showArchived, _showAllHabits) { allHabits, showArchived, showAll ->
+            if (showAll) {
+                allHabits.filter { it.isArchived == showArchived }
+            } else {
+                val calendar = Calendar.getInstance()
+                // Notre logique: Lundi = 1, Mardi = 2, ..., Dimanche = 7
+                val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+                val today = if (dayOfWeek == Calendar.SUNDAY) 7 else dayOfWeek - 1
+
+                allHabits.filter { habit ->
+                    val appearsToday = habit.daysOfWeek.isNullOrEmpty() || habit.daysOfWeek.contains(today)
+                    habit.isArchived == showArchived && appearsToday
+                }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
         fetchHabits()
         fetchHabitCompletions()
     }
+
+    val filteredHabits: StateFlow<List<Habit>> = _filteredHabits
 
     private fun todayDateString(): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

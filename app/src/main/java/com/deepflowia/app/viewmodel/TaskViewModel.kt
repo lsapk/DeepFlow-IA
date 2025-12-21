@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 
 class TaskViewModel : ViewModel() {
 
-    private val _tasks = MutableStateFlow<List<Task>>(emptyList())
-    val tasks: StateFlow<List<Task>> = _tasks
+    private val _allTasks = MutableStateFlow<List<Task>>(emptyList())
+    val allTasks: StateFlow<List<Task>> = _allTasks
     private val _subtasks = MutableStateFlow<List<Subtask>>(emptyList())
     private val _selectedTask = MutableStateFlow<Task?>(null)
     val selectedTask: StateFlow<Task?> = _selectedTask
@@ -61,7 +61,7 @@ class TaskViewModel : ViewModel() {
             val tasksWithSubtasks = tasksResult.map { task ->
                 task.copy(subtasks = subtasksResult.filter { it.parentTaskId == task.id })
             }
-            _tasks.value = tasksWithSubtasks.sortedWith(compareBy { task ->
+            _allTasks.value = tasksWithSubtasks.sortedWith(compareBy { task ->
                 when (task.priority) {
                     "high" -> 0
                     "medium" -> 1
