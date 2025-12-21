@@ -7,8 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -73,7 +73,7 @@ fun AIScreen(
                 title = { Text("Assistant IA") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -228,7 +228,7 @@ fun MessageInput(onSendMessage: (String) -> Unit) {
             },
             enabled = text.text.isNotBlank()
         ) {
-            Icon(Icons.Filled.Send, contentDescription = "Envoyer")
+            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Envoyer")
         }
     }
 }

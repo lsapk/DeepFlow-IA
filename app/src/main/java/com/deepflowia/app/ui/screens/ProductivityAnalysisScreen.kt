@@ -17,9 +17,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.deepflowia.app.viewmodel.AIViewModel
+import com.deepflowia.app.viewmodel.AuthViewModel
 import com.deepflowia.app.viewmodel.FocusViewModel
 import com.deepflowia.app.viewmodel.GoalViewModel
 import com.deepflowia.app.viewmodel.HabitViewModel
+import com.deepflowia.app.viewmodel.JournalViewModel
+import com.deepflowia.app.viewmodel.SettingsViewModel
 import com.deepflowia.app.viewmodel.TaskViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -31,9 +34,20 @@ fun ProductivityAnalysisScreen(
     taskViewModel: TaskViewModel = viewModel(),
     habitViewModel: HabitViewModel = viewModel(),
     goalViewModel: GoalViewModel = viewModel(),
-    focusViewModel: FocusViewModel = viewModel()
+    focusViewModel: FocusViewModel = viewModel(),
+    journalViewModel: JournalViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
-    val factory = AIViewModel.AIViewModelFactory(taskViewModel, habitViewModel, goalViewModel, focusViewModel)
+    val factory = AIViewModel.AIViewModelFactory(
+        taskViewModel = taskViewModel,
+        habitViewModel = habitViewModel,
+        goalViewModel = goalViewModel,
+        focusViewModel = focusViewModel,
+        journalViewModel = journalViewModel,
+        settingsViewModel = settingsViewModel,
+        authViewModel = authViewModel
+    )
     val aiViewModel: AIViewModel = viewModel(factory = factory)
     val uiState by aiViewModel.uiState.collectAsState()
 

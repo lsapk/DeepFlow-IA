@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +35,7 @@ fun TasksScreen(
     navController: NavController,
     taskViewModel: TaskViewModel = viewModel()
 ) {
-    val tasks by taskViewModel.tasks.collectAsState()
+    val tasks by taskViewModel.allTasks.collectAsState()
     var showCompleted by remember { mutableStateOf(false) }
 
     Scaffold(
