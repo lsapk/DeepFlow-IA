@@ -26,7 +26,7 @@ class HomeViewModel : ViewModel() {
 
     val reportState: StateFlow<HomeReportState> = combine(
         focusViewModel.statsTodayMinutes,
-        taskViewModel.tasks,
+        taskViewModel.allTasks,
         habitViewModel.habitCompletions
     ) { focusMinutes, tasks, habitCompletions ->
 
