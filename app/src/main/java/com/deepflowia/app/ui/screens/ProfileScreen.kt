@@ -177,6 +177,12 @@ fun PreferencesSection(
             title = "Notifications",
             onClick = { navController.navigate("notification_settings") }
         )
+        Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+        SettingsItem(
+            icon = Icons.Outlined.PrivacyTip,
+            title = "Confidentialité IA",
+            onClick = { navController.navigate("privacy_settings") }
+        )
     }
 }
 

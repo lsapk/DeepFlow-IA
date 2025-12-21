@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 class GoalViewModel : ViewModel() {
 
     private val _goals = MutableStateFlow<List<Goal>>(emptyList())
+    val allGoals: StateFlow<List<Goal>> = _goals
     private val _subobjectives = MutableStateFlow<List<Subobjective>>(emptyList())
     private val _showCompleted = MutableStateFlow(false)
     private val _selectedGoal = MutableStateFlow<Goal?>(null)

@@ -29,12 +29,23 @@ import kotlinx.coroutines.launch
 @Composable
 fun AIScreen(
     navController: NavController,
+    authViewModel: AuthViewModel = viewModel(),
     taskViewModel: TaskViewModel = viewModel(),
     habitViewModel: HabitViewModel = viewModel(),
     goalViewModel: GoalViewModel = viewModel(),
-    focusViewModel: FocusViewModel = viewModel()
+    focusViewModel: FocusViewModel = viewModel(),
+    journalViewModel: JournalViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel()
 ) {
-    val factory = AIViewModel.AIViewModelFactory(taskViewModel, habitViewModel, goalViewModel, focusViewModel)
+    val factory = AIViewModel.AIViewModelFactory(
+        taskViewModel,
+        habitViewModel,
+        goalViewModel,
+        focusViewModel,
+        journalViewModel,
+        settingsViewModel,
+        authViewModel
+    )
     val aiViewModel: AIViewModel = viewModel(factory = factory)
     val uiState by aiViewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -48,9 +59,9 @@ fun AIScreen(
         }
     }
 
-    if (uiState.suggestedAction != null) {
+    if (uiState.suggestedActions != null) {
         ConfirmationDialog(
-            action = uiState.suggestedAction!!,
+            actions = uiState.suggestedActions!!,
             onConfirm = { aiViewModel.confirmSuggestedAction() },
             onDismiss = { aiViewModel.clearSuggestedAction() }
         )
@@ -81,10 +92,6 @@ fun AIScreen(
                 ModeSelector(
                     currentMode = uiState.currentMode,
                     onModeSelected = { aiViewModel.setMode(it) }
-                )
-                DataAccessSwitch(
-                    canAccessData = uiState.canAccessData,
-                    onCheckedChange = { aiViewModel.setCanAccessData(it) }
                 )
                 LazyColumn(
                     state = listState,
@@ -129,26 +136,6 @@ fun ModeSelector(currentMode: AIMode, onModeSelected: (AIMode) -> Unit) {
 }
 
 @Composable
-fun DataAccessSwitch(
-    canAccessData: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text("Autoriser l'IA à accéder à vos données", modifier = Modifier.weight(1f))
-        Switch(
-            checked = canAccessData,
-            onCheckedChange = onCheckedChange
-        )
-    }
-}
-
-@Composable
 fun MessageBubble(message: ChatMessage) {
     Row(
         modifier = Modifier
@@ -180,25 +167,28 @@ fun MessageBubble(message: ChatMessage) {
 
 @Composable
 fun ConfirmationDialog(
-    action: SuggestedAction,
+    actions: List<SuggestedAction>,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Créer une nouvelle ${action.type} ?") },
+        title = { Text("Confirmer les actions suggérées ?") },
         text = {
-            Column {
-                Text("Titre : ${action.titre}", style = MaterialTheme.typography.bodyLarge)
-                action.details?.let {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Détails : $it", style = MaterialTheme.typography.bodyMedium)
+            LazyColumn {
+                items(actions) { action ->
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Text("Créer ${action.type}: ${action.titre}", style = MaterialTheme.typography.bodyLarge)
+                        action.details?.let {
+                            Text("Détails: $it", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
             Button(onClick = onConfirm) {
-                Text("Confirmer")
+                Text("Tout confirmer")
             }
         },
         dismissButton = {

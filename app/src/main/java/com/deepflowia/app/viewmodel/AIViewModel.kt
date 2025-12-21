@@ -1,10 +1,13 @@
 package com.deepflowia.app.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.GeminiResult
 import com.deepflowia.app.data.GeminiService
+import com.deepflowia.app.data.SettingsRepository
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.*
 import io.github.jan.supabase.auth.auth
@@ -32,19 +35,21 @@ data class AIUiState(
     val errorMessage: String? = null,
     val conversation: List<ChatMessage> = emptyList(),
     val currentMode: AIMode = AIMode.DISCUSSION,
-    val suggestedAction: SuggestedAction? = null,
+    val suggestedActions: List<SuggestedAction>? = null,
     val productivityAnalysis: AIProductivityAnalysis? = null, // The raw data from DB
     val parsedAnalysis: ParsedAnalysisResult? = null, // The parsed result for UI
     val isAnalysisLoading: Boolean = false,
-    val personalityProfile: AIPersonalityProfile? = null,
-    val canAccessData: Boolean = true
+    val personalityProfile: AIPersonalityProfile? = null
 )
 
 class AIViewModel(
-    private val taskViewModel: TaskViewModel = TaskViewModel(),
-    private val habitViewModel: HabitViewModel = HabitViewModel(),
-    private val goalViewModel: GoalViewModel = GoalViewModel(),
-    private val focusViewModel: FocusViewModel = FocusViewModel()
+    private val taskViewModel: TaskViewModel,
+    private val habitViewModel: HabitViewModel,
+    private val goalViewModel: GoalViewModel,
+    private val focusViewModel: FocusViewModel,
+    private val journalViewModel: JournalViewModel,
+    private val settingsViewModel: SettingsViewModel,
+    private val authViewModel: AuthViewModel
 ) : ViewModel() {
 
     private val geminiService = GeminiService()
@@ -92,9 +97,9 @@ class AIViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val tasks = taskViewModel.tasks.value
-            val habits = habitViewModel.filteredHabits.value
-            val goals = goalViewModel.filteredGoals.value
+            val tasks = taskViewModel.allTasks.value
+            val habits = habitViewModel.allHabits.value
+            val goals = goalViewModel.allGoals.value
             val sessions = focusViewModel.focusSessions.value
 
             val context = """
@@ -127,7 +132,7 @@ class AIViewModel(
                                 profileData = profileJson
                             )
                             val savedProfile = SupabaseManager.client.postgrest.from("ai_personality_profiles")
-                                .upsert(newProfile) // Removed onConflict for simplicity, upsert by primary key is default
+                                .upsert(newProfile)
                                 .decodeSingle<AIPersonalityProfile>()
                             _uiState.update { it.copy(personalityProfile = savedProfile, isLoading = false) }
                         } else {
@@ -159,17 +164,17 @@ class AIViewModel(
             when (val result = geminiService.generateContent(prompt)) {
                 is GeminiResult.Success -> {
                     val aiResponse = result.text ?: "Désolé, je n'ai pas de réponse pour le moment."
-                    var suggestedAction: SuggestedAction? = null
+                    var suggestedActions: List<SuggestedAction>? = null
 
                     if (_uiState.value.currentMode == AIMode.CREATION) {
-                        suggestedAction = parseSuggestedAction(aiResponse)
+                        suggestedActions = parseSuggestedActions(aiResponse)
                     }
 
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             conversation = it.conversation + ChatMessage(text = aiResponse, isFromUser = false),
-                            suggestedAction = suggestedAction
+                            suggestedActions = suggestedActions
                         )
                     }
                 }
@@ -186,40 +191,49 @@ class AIViewModel(
     }
 
     fun confirmSuggestedAction() {
-        val action = _uiState.value.suggestedAction ?: return
+        val actions = _uiState.value.suggestedActions ?: return
         val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return
 
         viewModelScope.launch {
-            var confirmationMessage = "Je ne suis pas sûr de ce qu'il faut créer. Pouvez-vous clarifier ?"
-            when (action.type.lowercase()) {
-                "tâche", "task" -> {
-                    if (action.parent_id.isNullOrBlank()) {
-                        val newTask = Task(userId = userId, title = action.titre, description = action.details)
-                        taskViewModel.createTask(newTask)
-                        confirmationMessage = "✅ Tâche créée : ${action.titre}"
-                    } else {
-                        val newSubtask = Subtask(userId = userId, title = action.titre, parentTaskId = action.parent_id, description = action.details)
-                        taskViewModel.createSubtask(newSubtask)
-                        confirmationMessage = "✔️ Sous-tâche créée : ${action.titre}"
+            val confirmationMessages = mutableListOf<String>()
+            for (action in actions) {
+                var message = "❓ Action non reconnue : ${action.titre}"
+                when (action.type.lowercase()) {
+                    "tâche", "task" -> {
+                        if (action.parent_id.isNullOrBlank()) {
+                            val newTask = Task(userId = userId, title = action.titre, description = action.details)
+                            taskViewModel.createTask(newTask)
+                            message = "✅ Tâche créée : ${action.titre}"
+                        } else {
+                            val newSubtask = Subtask(userId = userId, title = action.titre, parentTaskId = action.parent_id, description = action.details)
+                            taskViewModel.createSubtask(newSubtask)
+                            message = "✔️ Sous-tâche créée : ${action.titre}"
+                        }
+                    }
+                    "objectif", "goal" -> {
+                        if (action.parent_id.isNullOrBlank()) {
+                            val newGoal = Goal(userId = userId, title = action.titre, description = action.details)
+                            goalViewModel.createGoal(newGoal)
+                            message = "🎯 Objectif créé : ${action.titre}"
+                        } else {
+                            val newSubobjective = Subobjective(userId = userId, title = action.titre, description = action.details, parentGoalId = action.parent_id)
+                            goalViewModel.createSubobjective(newSubobjective)
+                            message = "✔️ Sous-objectif créé : ${action.titre}"
+                        }
+                    }
+                     "habitude", "habit" -> {
+                        val newHabit = Habit(userId = userId, title = action.titre, description = action.details)
+                        habitViewModel.createHabit(newHabit)
+                        message = "👍 Habitude créée : ${action.titre}"
                     }
                 }
-                 "objectif", "goal" -> {
-                    if (action.parent_id.isNullOrBlank()) {
-                        val newGoal = Goal(userId = userId, title = action.titre, description = action.details)
-                        goalViewModel.createGoal(newGoal)
-                        confirmationMessage = "🎯 Objectif créé : ${action.titre}"
-                    } else {
-                        val newSubobjective = Subobjective(userId = userId, title = action.titre, description = action.details, parentGoalId = action.parent_id)
-                        goalViewModel.createSubobjective(newSubobjective)
-                        confirmationMessage = "✔️ Sous-objectif créé : ${action.titre}"
-                    }
-                }
+                confirmationMessages.add(message)
             }
             _uiState.update {
                 it.copy(
-                    suggestedAction = null,
+                    suggestedActions = null,
                     conversation = it.conversation + ChatMessage(
-                        text = confirmationMessage,
+                        text = "Actions effectuées :\n" + confirmationMessages.joinToString("\n"),
                         isFromUser = false
                     )
                 )
@@ -227,12 +241,13 @@ class AIViewModel(
         }
     }
 
+
     fun clearSuggestedAction() {
-        _uiState.update { it.copy(suggestedAction = null) }
+        _uiState.update { it.copy(suggestedActions = null) }
     }
 
     fun setMode(newMode: AIMode) {
-        _uiState.update { it.copy(currentMode = newMode, suggestedAction = null) }
+        _uiState.update { it.copy(currentMode = newMode, suggestedActions = null) }
         _uiState.update {
             val modeText = when (newMode) {
                 AIMode.DISCUSSION -> "Mode Discussion activé. Comment puis-je vous aider à réfléchir ?"
@@ -241,10 +256,6 @@ class AIViewModel(
             }
             it.copy(conversation = it.conversation + ChatMessage(text = modeText, isFromUser = false))
         }
-    }
-
-    fun setCanAccessData(canAccess: Boolean) {
-        _uiState.update { it.copy(canAccessData = canAccess) }
     }
 
     fun fetchLatestProductivityAnalysis() {
@@ -273,9 +284,9 @@ class AIViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isAnalysisLoading = true, errorMessage = null) }
 
-            val tasks = taskViewModel.tasks.value
-            val habits = habitViewModel.filteredHabits.value
-            val goals = goalViewModel.filteredGoals.value
+            val tasks = taskViewModel.allTasks.value
+            val habits = habitViewModel.allHabits.value
+            val goals = goalViewModel.allGoals.value
             val sessions = focusViewModel.focusSessions.value
 
             val context = """
@@ -301,13 +312,11 @@ class AIViewModel(
                     val analysisText = result.text ?: "L'analyse a échoué, veuillez réessayer."
                     val parsedResult = parseAnalysis(analysisText)
 
-                    // Mettre à jour l'UI immédiatement avec le résultat parsé
                     _uiState.update { it.copy(
                         parsedAnalysis = parsedResult,
                         isAnalysisLoading = false
                     ) }
 
-                    // Essayer d'enregistrer le résultat dans Supabase en arrière-plan
                     try {
                         val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
                         if (userId != null) {
@@ -315,15 +324,12 @@ class AIViewModel(
                                 userId = userId,
                                 analysisData = analysisText
                             )
-                            val savedAnalysis = SupabaseManager.client.postgrest.from("ai_personality_profiles")
+                            val savedAnalysis = SupabaseManager.client.postgrest.from("ai_productivity_analysis")
                                 .upsert(analysisData)
                                 .decodeSingle<AIProductivityAnalysis>()
-                            // Mettre à jour l'état avec les données sauvegardées (facultatif, car l'UI a déjà le résultat)
                              _uiState.update { it.copy(productivityAnalysis = savedAnalysis) }
                         }
                     } catch (e: Exception) {
-                        // L'enregistrement a échoué, mais l'utilisateur a déjà vu le résultat.
-                        // On pourrait logger cette erreur discrètement.
                         println("Échec de la sauvegarde de l'analyse: ${e.message}")
                     }
                 }
@@ -341,71 +347,87 @@ class AIViewModel(
             val insights = analysisText.substringAfter("INSIGHTS:").trim()
             return ParsedAnalysisResult(score, recommendations, insights)
         } catch (e: Exception) {
-            return ParsedAnalysisResult() // Return default/empty result on parsing error
+            return ParsedAnalysisResult()
         }
     }
 
     private suspend fun buildPrompt(userMessage: String): String {
-        val basePrompt = "Vous êtes un coach en productivité intelligent et amical. Votre objectif est d'aider l'utilisateur à atteindre son plein potentiel."
+        val basePrompt = "Vous êtes un coach en productivité intelligent et amical. Votre objectif est d'aider l'utilisateur à atteindre son plein potentiel. Vous devez répondre en format Markdown, en utilisant des émojis pour rendre la conversation plus vivante, mais sans jamais utiliser d'astérisques pour le gras."
         var userDataContext = ""
+        val settings = settingsViewModel.settingsState.first()
 
-        if (_uiState.value.canAccessData) {
-            // Utilise .first() pour s'assurer que les données sont chargées avant de continuer.
-            val tasks = taskViewModel.tasks.first()
-            val habits = habitViewModel.filteredHabits.first()
-            val goals = goalViewModel.filteredGoals.first()
+        val contextBuilder = StringBuilder()
 
-            val taskSummary = tasks.take(5).joinToString("\n") {
-                "- Tâche: ${it.title} ${if(it.completed) "✅" else "⏳"}" +
-                it.subtasks.joinToString("") { st -> "\n  - Sous-tâche: ${st.title} ${if(st.completed) "✔️" else "🔘"}"}
-            }
-            val habitSummary = habits.take(5).joinToString("\n") { "- Habitude: ${it.title} (Série: ${it.streak} 🔥)" }
-            val goalSummary = goals.take(5).joinToString("\n") {
-                "- Objectif: ${it.title} (${it.progress}%) 🎯" +
-                it.subobjectives.joinToString("") { so -> "\n  - Sous-objectif: ${so.title} ${if(so.completed) "✔️" else "🔘"}"}
-            }
+        if (settings.canAccessTasks) {
+            val tasks = taskViewModel.allTasks.first()
+            contextBuilder.append("\nTâches (En cours et Terminées):\n")
+            contextBuilder.append(tasks.joinToString("\n") { "- Tâche: ${it.title} (État: ${if(it.completed) "Terminée ✅" else "En cours ⏳"})" })
+        }
+        if (settings.canAccessHabits) {
+            val habits = habitViewModel.allHabits.first()
+            contextBuilder.append("\n\nHabitudes (Actives et Archivées):\n")
+            contextBuilder.append(habits.joinToString("\n") { "- Habitude: ${it.title} (Série: ${it.streak} 🔥, Archivée: ${if(it.isArchived) "Oui" else "Non"})" })
+        }
+        if (settings.canAccessGoals) {
+            val goals = goalViewModel.allGoals.first()
+            contextBuilder.append("\n\nObjectifs (En cours et Terminés):\n")
+            contextBuilder.append(goals.joinToString("\n") { "- Objectif: ${it.title} (Progrès: ${it.progress}%, Terminé: ${if(it.completed) "Oui ✅" else "Non 🎯"})" })
+        }
+        if (settings.canAccessFocus) {
+            val sessions = focusViewModel.focusSessions.first()
+            contextBuilder.append("\n\nSessions de Focus Récentes:\n")
+            contextBuilder.append(sessions.take(5).joinToString("\n") { "- Session de focus: ${it.duration} minutes le ${it.startedAt}" })
+        }
+        if (settings.canAccessJournal) {
+            val journal = journalViewModel.journalEntries.first()
+            val reflections = journalViewModel.dailyReflections.first()
+            contextBuilder.append("\n\nDernières Entrées de Journal:\n")
+            contextBuilder.append(journal.take(3).joinToString("\n") { "- Entrée de journal: ${it.title}" })
+            contextBuilder.append("\n\nDernières Réflexions:\n")
+            contextBuilder.append(reflections.take(3).joinToString("\n") { "- Réflexion: ${it.question}" })
+        }
+        if (settings.canAccessPersonalInfo) {
+            val userEmail = authViewModel.userEmail.first()
+            contextBuilder.append("\n\nInformations Personnelles:\n")
+            contextBuilder.append("- Email: ${userEmail ?: "Non renseigné"}")
+        }
 
-            userDataContext = """
+        if (contextBuilder.isNotBlank()) {
+             userDataContext = """
                 ---
-                ### Contexte de l'Utilisateur 📊
-                Voici un résumé des données actuelles de l'utilisateur pour vous aider à personnaliser votre réponse :
-
-                **Tâches Principales :**
-                $taskSummary
-
-                **Habitudes Suivies :**
-                $habitSummary
-
-                **Objectifs Actuels :**
-                $goalSummary
+                Contexte de l'Utilisateur 📊
+                Voici les données autorisées par l'utilisateur pour personnaliser votre réponse.
+                $contextBuilder
                 ---
             """.trimIndent()
         }
 
+
         val modeInstruction = when (_uiState.value.currentMode) {
-            AIMode.DISCUSSION -> "✍️ **Mode Discussion :** Aidez l'utilisateur à réfléchir, à explorer des idées et à planifier. Soyez un partenaire de brainstorming."
-            AIMode.CREATION -> "💡 **Mode Création :** Si l'utilisateur veut créer quelque chose, proposez une réponse au format JSON. Par exemple : `{\"type\": \"tâche\", \"titre\": \"...\", \"details\": \"...\", \"parent_id\": \"...\"}`. Le `parent_id` est optionnel, à utiliser pour les sous-tâches/sous-objectifs. Sinon, discutez normalement."
-            AIMode.ANALYSE -> "📈 **Mode Analyse :** Analysez en profondeur les données fournies dans le contexte et répondez aux questions spécifiques de l'utilisateur sur sa productivité."
+            AIMode.DISCUSSION -> "Mode Discussion: Aidez l'utilisateur à réfléchir, à explorer des idées et à planifier. Soyez un partenaire de brainstorming."
+            AIMode.CREATION -> "Mode Création: Si l'utilisateur veut créer quelque chose, proposez une réponse au format JSON. Vous pouvez proposer un objet unique ou une liste d'objets. Par exemple : `[{\"type\": \"tâche\", \"titre\": \"...\"}, {\"type\": \"habitude\", \"titre\": \"...\"}]`. Sinon, discutez normalement."
+            AIMode.ANALYSE -> "Mode Analyse: Analysez en profondeur les données fournies dans le contexte et répondez aux questions spécifiques de l'utilisateur sur sa productivité."
         }
 
-        return "$basePrompt\n\n$modeInstruction\n\n$userDataContext\n\n**Utilisateur :**\n$userMessage\n\n**Assistant :**\n"
+        return "$basePrompt\n\n$modeInstruction\n\n$userDataContext\n\nUtilisateur:\n$userMessage\n\nAssistant:\n"
     }
 
-    private fun parseSuggestedAction(responseText: String): SuggestedAction? {
+    private fun parseSuggestedActions(responseText: String): List<SuggestedAction>? {
         return try {
-            // Extracts the JSON part from a markdown code block if present
             val jsonString = if (responseText.contains("```json")) {
                 responseText.substringAfter("```json").substringBefore("```").trim()
             } else {
                 responseText
             }
-            if (jsonString.isNotBlank()) {
-                json.decodeFromString<SuggestedAction>(jsonString)
+
+            if (jsonString.isBlank()) return null
+
+            if (jsonString.trim().startsWith("[")) {
+                json.decodeFromString<List<SuggestedAction>>(jsonString)
             } else {
-                null
+                listOf(json.decodeFromString<SuggestedAction>(jsonString))
             }
         } catch (e: Exception) {
-            // Log or handle exception if parsing fails
             null
         }
     }
@@ -415,11 +437,22 @@ class AIViewModel(
         private val taskViewModel: TaskViewModel,
         private val habitViewModel: HabitViewModel,
         private val goalViewModel: GoalViewModel,
-        private val focusViewModel: FocusViewModel
+        private val focusViewModel: FocusViewModel,
+        private val journalViewModel: JournalViewModel,
+        private val settingsViewModel: SettingsViewModel,
+        private val authViewModel: AuthViewModel
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(AIViewModel::class.java)) {
-                return AIViewModel(taskViewModel, habitViewModel, goalViewModel, focusViewModel) as T
+                return AIViewModel(
+                    taskViewModel,
+                    habitViewModel,
+                    goalViewModel,
+                    focusViewModel,
+                    journalViewModel,
+                    settingsViewModel,
+                    authViewModel
+                ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

@@ -124,6 +124,7 @@ fun NavGraph(
         }
         composable("admin_panel") { AdminScreen(navController = navController) }
         composable("notification_settings") { NotificationSettingsScreen(navController = navController) }
+        composable("privacy_settings") { PrivacySettingsScreen(navController = navController) }
     }
 }
 
