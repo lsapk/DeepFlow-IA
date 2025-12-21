@@ -1,10 +1,14 @@
 package com.deepflowia.app.viewmodel
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.deepflowia.app.BuildConfig
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.UserRole
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -15,7 +19,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+        .requestEmail()
+        .build()
+    private val googleSignInClient = GoogleSignIn.getClient(application, gso)
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initializing)
     val authState: StateFlow<AuthState> = _authState
@@ -105,8 +115,9 @@ class AuthViewModel : ViewModel() {
 
     fun signOut() {
         viewModelScope.launch {
-            Log.d("AuthViewModel", "Tentative de déconnexion.")
+            Log.d("AuthViewModel", "Tentative de déconnexion de Google et Supabase.")
             try {
+                googleSignInClient.signOut() // Déconnexion de Google
                 SupabaseManager.client.auth.signOut()
                 _authState.value = AuthState.SignedOut
                 Log.d("AuthViewModel", "Déconnexion réussie.")
@@ -153,7 +164,12 @@ class AuthViewModel : ViewModel() {
                 }
                 // L'état SignedIn sera mis à jour automatiquement par le collecteur sessionStatus
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Une erreur est survenue lors de la connexion avec Google")
+                val errorMessage = if (e.message?.contains("User already registered") == true) {
+                    "Un compte existe déjà avec cet e-mail. Veuillez vous connecter avec votre mot de passe."
+                } else {
+                    e.message ?: "Une erreur est survenue lors de la connexion avec Google"
+                }
+                _authState.value = AuthState.Error(errorMessage)
                 Log.e("AuthViewModel", "Échec de la connexion avec Google.", e)
             }
         }

@@ -60,13 +60,7 @@ fun AISelectionScreen(navController: NavController) {
                 FeatureCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(2f)
-                        .shadow(
-                            elevation = 24.dp,
-                            shape = MaterialTheme.shapes.large,
-                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                        ),
+                        .weight(2f),
                     icon = Icons.Outlined.Chat,
                     title = "Assistant IA",
                     description = "Discutez, brainstormez et créez des tâches avec votre assistant personnel.",

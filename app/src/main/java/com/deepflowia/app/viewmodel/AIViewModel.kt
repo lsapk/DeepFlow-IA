@@ -196,22 +196,22 @@ class AIViewModel(
                     if (action.parent_id.isNullOrBlank()) {
                         val newTask = Task(userId = userId, title = action.titre, description = action.details)
                         taskViewModel.createTask(newTask)
-                        confirmationMessage = "✅ Tâche créée : **${action.titre}**"
+                        confirmationMessage = "✅ Tâche créée : ${action.titre}"
                     } else {
                         val newSubtask = Subtask(userId = userId, title = action.titre, parentTaskId = action.parent_id, description = action.details)
                         taskViewModel.createSubtask(newSubtask)
-                        confirmationMessage = "✔️ Sous-tâche créée : **${action.titre}**"
+                        confirmationMessage = "✔️ Sous-tâche créée : ${action.titre}"
                     }
                 }
                  "objectif", "goal" -> {
                     if (action.parent_id.isNullOrBlank()) {
                         val newGoal = Goal(userId = userId, title = action.titre, description = action.details)
                         goalViewModel.createGoal(newGoal)
-                        confirmationMessage = "🎯 Objectif créé : **${action.titre}**"
+                        confirmationMessage = "🎯 Objectif créé : ${action.titre}"
                     } else {
                         val newSubobjective = Subobjective(userId = userId, title = action.titre, description = action.details, parentGoalId = action.parent_id)
                         goalViewModel.createSubobjective(newSubobjective)
-                        confirmationMessage = "✔️ Sous-objectif créé : **${action.titre}**"
+                        confirmationMessage = "✔️ Sous-objectif créé : ${action.titre}"
                     }
                 }
             }
@@ -346,7 +346,7 @@ class AIViewModel(
     }
 
     private suspend fun buildPrompt(userMessage: String): String {
-        val basePrompt = "Vous êtes un coach en productivité intelligent et amical. Votre objectif est d'aider l'utilisateur à atteindre son plein potentiel. **Répondez toujours en utilisant le format Markdown et des emojis pour rendre vos réponses engageantes et faciles à lire.**"
+        val basePrompt = "Vous êtes un coach en productivité intelligent et amical. Votre objectif est d'aider l'utilisateur à atteindre son plein potentiel."
         var userDataContext = ""
 
         if (_uiState.value.canAccessData) {
