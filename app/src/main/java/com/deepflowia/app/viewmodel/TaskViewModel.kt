@@ -2,173 +2,139 @@ package com.deepflowia.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.deepflowia.app.data.SupabaseManager
+import com.deepflowia.app.data.TaskRepository
 import com.deepflowia.app.models.Subtask
 import com.deepflowia.app.models.Task
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.auth.GoTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TaskViewModel : ViewModel() {
+@HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
+class TaskViewModel @Inject constructor(
+    private val taskRepository: TaskRepository,
+    private val auth: GoTrue
+) : ViewModel() {
+
+    private val currentUserId: String? get() = auth.currentUserOrNull()?.id
 
     private val _allTasks = MutableStateFlow<List<Task>>(emptyList())
-    val allTasks: StateFlow<List<Task>> = _allTasks
-    private val _subtasks = MutableStateFlow<List<Subtask>>(emptyList())
-    private val _selectedTask = MutableStateFlow<Task?>(null)
-    val selectedTask: StateFlow<Task?> = _selectedTask
+    val allTasks: StateFlow<List<Task>> = _allTasks.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _selectedTaskId = MutableStateFlow<String?>(null)
+    val selectedTask: StateFlow<Task?> = _selectedTaskId.flatMapLatest { id ->
+        if (id == null) {
+            flowOf(null)
+        } else {
+            // Combine la tâche et ses sous-tâches dans un seul flow
+            val taskFlow = allTasks.map { list -> list.find { it.id == id } }
+            val subtasksFlow = taskRepository.getSubtasksForTask(id)
+            combine(taskFlow, subtasksFlow) { task, subtasks ->
+                task?.copy(subtasks = subtasks)
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+
     init {
-        fetchTasks()
+        observeTasks()
+        refreshTasks()
+    }
+
+    private fun observeTasks() {
+        viewModelScope.launch {
+            currentUserId?.let { userId ->
+                taskRepository.getAllTasks(userId).collect { tasks ->
+                    _allTasks.value = tasks.sortedWith(compareBy { task ->
+                        when (task.priority) {
+                            "high" -> 0
+                            "medium" -> 1
+                            "low" -> 2
+                            else -> 3
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    fun refreshTasks() {
+        viewModelScope.launch {
+            currentUserId?.let {
+                taskRepository.refreshTasks(it)
+                    .onFailure { e -> _error.value = "Erreur de synchronisation des tâches." }
+            }
+        }
     }
 
     fun getTaskById(taskId: String) {
-        viewModelScope.launch {
-            if (taskId == "-1") {
-                _selectedTask.value = null
-                return@launch
-            }
-            try {
-                val taskResult = SupabaseManager.client.postgrest.from("tasks")
-                    .select { filter { eq("id", taskId) } }
-                    .decodeSingleOrNull<Task>()
-
-                if (taskResult != null) {
-                    val subtasksResult = SupabaseManager.client.postgrest.from("subtasks")
-                        .select { filter { eq("parent_task_id", taskId) } }
-                        .decodeList<Subtask>()
-                    _selectedTask.value = taskResult.copy(subtasks = subtasksResult)
-                } else {
-                    _selectedTask.value = null
-                }
-            } catch (e: Exception) {
-               // Log error
-                _selectedTask.value = null
+        if (taskId == "-1") {
+            _selectedTaskId.value = null
+        } else {
+            _selectedTaskId.value = taskId
+            viewModelScope.launch {
+                taskRepository.refreshSubtasks(taskId)
             }
         }
     }
 
-    fun fetchTasks() {
+    fun createTask(task: Task, callback: (String?) -> Unit) {
         viewModelScope.launch {
-            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
-            val tasksResult = SupabaseManager.client.postgrest.from("tasks").select {
-                filter { eq("user_id", userId) }
-            }.decodeList<Task>()
-            val subtasksResult = SupabaseManager.client.postgrest.from("subtasks").select {
-                filter { eq("user_id", userId) }
-            }.decodeList<Subtask>()
-            _subtasks.value = subtasksResult
-            val tasksWithSubtasks = tasksResult.map { task ->
-                task.copy(subtasks = subtasksResult.filter { it.parentTaskId == task.id })
-            }
-            _allTasks.value = tasksWithSubtasks.sortedWith(compareBy { task ->
-                when (task.priority) {
-                    "high" -> 0
-                    "medium" -> 1
-                    "low" -> 2
-                    else -> 3
+            currentUserId?.let {
+                val result = taskRepository.createTask(task.copy(userId = it))
+                result.onSuccess { createdTask -> callback(createdTask.id) }
+                result.onFailure {
+                    _error.value = "Impossible de créer la tâche."
+                    callback(null)
                 }
-            })
-        }
-    }
-
-    suspend fun createTask(task: Task): String? {
-        val user = SupabaseManager.client.auth.currentUserOrNull() ?: return null
-        return try {
-            val newTask = task.copy(userId = user.id)
-            val result = SupabaseManager.client.postgrest.from("tasks").insert(listOf(newTask)).decodeSingle<Task>()
-            fetchTasks()
-            result.id
-        } catch (e: Exception) {
-            // Log error
-            null
+            } ?: callback(null)
         }
     }
 
     fun updateTask(task: Task) {
         viewModelScope.launch {
-            task.id?.let {
-                SupabaseManager.client.postgrest.from("tasks").update({
-                    set("title", task.title)
-                    set("description", task.description)
-                    set("completed", task.completed)
-                    set("due_date", task.dueDate)
-                    set("priority", task.priority)
-                }) {
-                    filter {
-                        eq("id", it)
-                    }
-                }
-                fetchTasks()
-            }
+            taskRepository.updateTask(task)
+                .onFailure { _error.value = "Impossible de mettre à jour la tâche." }
         }
     }
 
     fun deleteTask(task: Task) {
         viewModelScope.launch {
-            task.id?.let {
-                SupabaseManager.client.postgrest.from("tasks").delete {
-                    filter {
-                        eq("id", it)
-                    }
-                }
-                fetchTasks()
-            }
+            taskRepository.deleteTask(task)
+                .onFailure { _error.value = "Impossible de supprimer la tâche." }
         }
     }
 
     fun createSubtask(subtask: Subtask) {
         viewModelScope.launch {
-            try {
-                val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
-                val newSubtask = subtask.copy(userId = user.id)
-                SupabaseManager.client.postgrest.from("subtasks").insert(newSubtask)
-                getTaskById(subtask.parentTaskId) // Refresh selected task
-                fetchTasks() // Also refresh main list
-            } catch (e: Exception) {
-                // Log error
+            currentUserId?.let {
+                taskRepository.createSubtask(subtask.copy(userId = it))
+                    .onFailure { _error.value = "Impossible de créer la sous-tâche." }
             }
         }
     }
 
     fun updateSubtask(subtask: Subtask) {
         viewModelScope.launch {
-            subtask.id?.let {
-                try {
-                    SupabaseManager.client.postgrest.from("subtasks").update({
-                        set("title", subtask.title)
-                        set("completed", subtask.completed)
-                        set("description", subtask.description)
-                        set("priority", subtask.priority)
-                    }) {
-                        filter {
-                            eq("id", it)
-                        }
-                    }
-                    getTaskById(subtask.parentTaskId) // Refresh selected task
-                    fetchTasks() // Also refresh main list
-                } catch (e: Exception) {
-                    // Log error
-                }
-            }
+            taskRepository.updateSubtask(subtask)
+                .onFailure { _error.value = "Impossible de mettre à jour la sous-tâche." }
         }
     }
 
     fun deleteSubtask(subtask: Subtask) {
         viewModelScope.launch {
-            subtask.id?.let {
-                try {
-                    SupabaseManager.client.postgrest.from("subtasks").delete {
-                        filter {
-                            eq("id", it)
-                        }
-                    }
-                    getTaskById(subtask.parentTaskId) // Refresh selected task
-                    fetchTasks() // Also refresh main list
-                } catch (e: Exception) {
-                    // Log error
-                }
-            }
+            taskRepository.deleteSubtask(subtask)
+                .onFailure { _error.value = "Impossible de supprimer la sous-tâche." }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }
