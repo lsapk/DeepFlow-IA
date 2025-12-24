@@ -1,10 +1,27 @@
 package com.deepflowia.app.models
 
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
+@Entity(
+    tableName = "subobjectives",
+    foreignKeys = [ForeignKey(
+        entity = Goal::class,
+        parentColumns = ["id"],
+        childColumns = ["parentGoalId"],
+        onDelete = ForeignKey.CASCADE
+    )]
+)
 data class Subobjective(
+    @PrimaryKey(autoGenerate = true)
+    @Transient
+    val localId: Int = 0,
+
     @SerialName("id") val id: String? = null,
     @SerialName("user_id") val userId: String,
     @SerialName("parent_goal_id") val parentGoalId: String,

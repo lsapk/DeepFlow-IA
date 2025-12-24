@@ -1,10 +1,18 @@
 package com.deepflowia.app.models
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
+@Entity(tableName = "focus_sessions")
 data class FocusSession(
+    @PrimaryKey(autoGenerate = true)
+    @Transient
+    val localId: Int = 0,
+
     @SerialName("id")
     val id: String? = null,
 
