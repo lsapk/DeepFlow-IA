@@ -15,7 +15,10 @@ import java.time.ZoneId
 data class HomeReportState(
     val focusMinutesToday: Long = 0,
     val tasksCompletedToday: Int = 0,
-    val habitsCompletedToday: Int = 0
+    val habitsCompletedToday: Int = 0,
+    val focusGoal: Long = 60,
+    val tasksGoal: Int = 5,
+    val habitsGoal: Int = 3
 )
 
 class HomeViewModel : ViewModel() {

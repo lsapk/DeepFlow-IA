@@ -1,9 +1,13 @@
 package com.deepflowia.app.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -54,7 +58,9 @@ fun MainScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .windowInsetsPadding(
+                            WindowInsets.navigationBars.add(WindowInsets(16.dp))
+                        ),
                     shape = RoundedCornerShape(28.dp),
                     color = Color.Transparent // La couleur sera gérée par le glassmorphism
                 ) {

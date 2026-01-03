@@ -27,13 +27,13 @@ class AdminViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 val userList = SupabaseManager.client.postgrest
-                    .from("user")
-                    .select()
+                    .from("users")
+                    .select(columns = "id, email, firstName:first_name, lastName:last_name, createdAt:created_at, disabled, role:user_roles(role)")
                     .decodeList<AdminUser>()
                 _users.value = userList
-                Log.d("AdminViewModel", "Utilisateurs récupérés : ${userList.size}")
+                Log.d("AdminViewModel", "Utilisateurs et rôles récupérés : ${userList.size}")
             } catch (e: Exception) {
-                Log.e("AdminViewModel", "Erreur lors de la récupération des utilisateurs", e)
+                Log.e("AdminViewModel", "Erreur lors de la récupération des utilisateurs et des rôles", e)
                 _users.value = emptyList()
             } finally {
                 _isLoading.value = false
