@@ -79,15 +79,6 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Accueil", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold)) },
-                actions = {
-                    IconButton(onClick = onNavigateToProfile) {
-                        Icon(
-                            imageVector = Icons.Outlined.AccountCircle,
-                            contentDescription = "Profil",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -122,19 +113,19 @@ fun ReportSection(state: HomeReportState) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             ActivityRing(
-                progress = (state.focusMinutesToday / 60f).coerceIn(0f, 1f),
+                progress = (state.focusMinutesToday.toFloat() / state.focusGoal).coerceIn(0f, 1f),
                 label = "Focus",
                 value = "${state.focusMinutesToday}m",
                 gradient = listOf(color_orange, color_yellow)
             )
             ActivityRing(
-                progress = (state.tasksCompletedToday / 5f).coerceIn(0f, 1f),
+                progress = (state.tasksCompletedToday.toFloat() / state.tasksGoal).coerceIn(0f, 1f),
                 label = "Tâches",
                 value = "${state.tasksCompletedToday}",
                 gradient = listOf(color_blue, color_teal)
             )
             ActivityRing(
-                progress = (state.habitsCompletedToday / 5f).coerceIn(0f, 1f),
+                progress = (state.habitsCompletedToday.toFloat() / state.habitsGoal).coerceIn(0f, 1f),
                 label = "Habitudes",
                 value = "${state.habitsCompletedToday}",
                 gradient = listOf(color_green, color_green.copy(alpha = 0.7f))
