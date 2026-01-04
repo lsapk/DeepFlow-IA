@@ -11,10 +11,16 @@ data class AdminUser(
     val firstName: String? = null,
     @SerialName("lastName")
     val lastName: String? = null,
-    val role: String? = null,
+    @SerialName("user_roles")
+    val user_roles: List<RoleInfo> = emptyList(),
     @SerialName("createdAt")
     val createdAt: String? = null,
     val disabled: Boolean = false,
+)
+
+@Serializable
+data class RoleInfo(
+    val role: String
 )
 
 @Serializable

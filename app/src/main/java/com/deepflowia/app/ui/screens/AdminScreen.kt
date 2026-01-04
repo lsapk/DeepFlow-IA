@@ -77,7 +77,7 @@ fun UserListItem(user: AdminUser) {
                 fontWeight = FontWeight.Bold
             )
             Text(text = "Nom: ${user.firstName ?: ""} ${user.lastName ?: ""}")
-            Text(text = "Rôle: ${user.role ?: "Non défini"}")
+            Text(text = "Rôle: ${user.user_roles.firstOrNull()?.role ?: "Non assigné"}")
             Text(text = "ID: ${user.id}")
             Text(text = "Créé le: ${user.createdAt ?: "Date inconnue"}")
             Text(text = "Désactivé: ${if (user.disabled) "Oui" else "Non"}")

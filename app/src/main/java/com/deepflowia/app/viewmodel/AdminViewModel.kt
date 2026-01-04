@@ -29,7 +29,7 @@ class AdminViewModel : ViewModel() {
             try {
                 val userList = SupabaseManager.client.postgrest
                     .from("users")
-                    .select(columns = Columns.raw("id, email, firstName:first_name, lastName:last_name, createdAt:created_at, disabled, role:user_roles(role)"))
+                    .select(columns = Columns.raw("id, email, firstName:first_name, lastName:last_name, createdAt:created_at, disabled, user_roles(role)"))
                     .decodeList<AdminUser>()
                 _users.value = userList
                 Log.d("AdminViewModel", "Utilisateurs et rôles récupérés : ${userList.size}")
