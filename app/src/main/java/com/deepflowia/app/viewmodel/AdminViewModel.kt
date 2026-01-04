@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.deepflowia.app.data.SupabaseManager
 import com.deepflowia.app.models.AdminUser
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -28,7 +29,7 @@ class AdminViewModel : ViewModel() {
             try {
                 val userList = SupabaseManager.client.postgrest
                     .from("users")
-                    .select(columns = "id, email, firstName:first_name, lastName:last_name, createdAt:created_at, disabled, role:user_roles(role)")
+                    .select(columns = Columns.raw("id, email, firstName:first_name, lastName:last_name, createdAt:created_at, disabled, role:user_roles(role)"))
                     .decodeList<AdminUser>()
                 _users.value = userList
                 Log.d("AdminViewModel", "Utilisateurs et rôles récupérés : ${userList.size}")
