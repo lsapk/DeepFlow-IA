@@ -71,8 +71,8 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 _userRole.value = userRoleResult?.role
                 Log.d("AuthViewModel", "Rôle de l'utilisateur récupéré : ${userRoleResult?.role}")
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Erreur lors de la récupération du rôle de l'utilisateur", e)
-                _userRole.value = null
+                Log.e("AuthViewModel", "Erreur lors de la récupération du rôle, assignation du rôle 'user' par défaut.", e)
+                _userRole.value = "user"
             }
         }
     }
