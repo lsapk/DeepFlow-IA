@@ -1,11 +1,19 @@
 package com.deepflowia.app.models
 
-import kotlinx.serialization.Serializable
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
+@Entity(tableName = "tasks")
 data class Task(
+    @PrimaryKey(autoGenerate = true)
+    @Transient // Ignoré par kotlinx.serialization
+    val localId: Int = 0,
+
     @SerialName("id")
     val id: String? = null,
     @SerialName("user_id")
@@ -25,6 +33,8 @@ data class Task(
     val updatedAt: String? = null,
     @SerialName("linked_goal_id")
     val linkedGoalId: String? = null,
-    @Transient
+
+    @Transient // Ignoré par kotlinx.serialization
+    @Ignore    // Ignoré par Room
     val subtasks: List<Subtask> = emptyList()
 )

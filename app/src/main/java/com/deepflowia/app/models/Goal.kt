@@ -1,11 +1,19 @@
 package com.deepflowia.app.models
 
-import kotlinx.serialization.Serializable
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
+@Entity(tableName = "goals")
 data class Goal(
+    @PrimaryKey(autoGenerate = true)
+    @Transient
+    val localId: Int = 0,
+
     @SerialName("id")
     val id: String? = null,
     @SerialName("user_id")
@@ -23,6 +31,8 @@ data class Goal(
     val syncedAt: String? = null,
     @SerialName("updated_at")
     val updatedAt: String? = null,
+
     @Transient
+    @Ignore
     val subobjectives: List<Subobjective> = emptyList()
 )

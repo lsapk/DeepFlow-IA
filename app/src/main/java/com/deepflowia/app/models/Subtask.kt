@@ -1,10 +1,27 @@
 package com.deepflowia.app.models
 
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
+@Entity(
+    tableName = "subtasks",
+    foreignKeys = [ForeignKey(
+        entity = Task::class,
+        parentColumns = ["id"],
+        childColumns = ["parentTaskId"],
+        onDelete = ForeignKey.CASCADE
+    )]
+)
 data class Subtask(
+    @PrimaryKey(autoGenerate = true)
+    @Transient
+    val localId: Int = 0,
+
     @SerialName("id") val id: String? = null,
     @SerialName("parent_task_id") val parentTaskId: String,
     @SerialName("title") val title: String,

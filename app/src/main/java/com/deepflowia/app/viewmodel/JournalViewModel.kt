@@ -2,111 +2,96 @@ package com.deepflowia.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.deepflowia.app.data.SupabaseManager
+import com.deepflowia.app.data.JournalRepository
 import com.deepflowia.app.models.DailyReflection
 import com.deepflowia.app.models.JournalEntry
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.postgrest
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.auth.GoTrue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class JournalViewModel : ViewModel() {
+@HiltViewModel
+class JournalViewModel @Inject constructor(
+    private val journalRepository: JournalRepository,
+    private val auth: GoTrue
+) : ViewModel() {
+
+    private val currentUserId: String? get() = auth.currentUserOrNull()?.id
 
     private val _journalEntries = MutableStateFlow<List<JournalEntry>>(emptyList())
-    val journalEntries: StateFlow<List<JournalEntry>> = _journalEntries
+    val journalEntries: StateFlow<List<JournalEntry>> = _journalEntries.asStateFlow()
 
     private val _dailyReflections = MutableStateFlow<List<DailyReflection>>(emptyList())
-    val dailyReflections: StateFlow<List<DailyReflection>> = _dailyReflections
+    val dailyReflections: StateFlow<List<DailyReflection>> = _dailyReflections.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
-        fetchJournalEntries()
-        fetchDailyReflections()
+        observeData()
+        refreshData()
     }
 
-    fun fetchJournalEntries() {
+    private fun observeData() {
         viewModelScope.launch {
-            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
-            try {
-                val entries = SupabaseManager.client.postgrest.from("journal_entries").select {
-                    filter { eq("user_id", userId) }
-                }.decodeList<JournalEntry>()
-                _journalEntries.value = entries
-            } catch (e: Exception) {
-                // Log error
+            currentUserId?.let { userId ->
+                journalRepository.getAllJournalEntries(userId).collect { _journalEntries.value = it }
+            }
+        }
+        viewModelScope.launch {
+            currentUserId?.let { userId ->
+                journalRepository.getAllDailyReflections(userId).collect { _dailyReflections.value = it }
+            }
+        }
+    }
+
+    fun refreshData() {
+        viewModelScope.launch {
+            currentUserId?.let {
+                journalRepository.refreshJournalEntries(it)
+                    .onFailure { _error.value = "Erreur de synchronisation du journal." }
+                journalRepository.refreshDailyReflections(it)
+                    .onFailure { _error.value = "Erreur de synchronisation des réflexions." }
             }
         }
     }
 
     fun createJournalEntry(entry: JournalEntry) {
         viewModelScope.launch {
-            val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
-            try {
-                SupabaseManager.client.postgrest.from("journal_entries").insert(entry.copy(userId = user.id))
-                fetchJournalEntries()
-            } catch (e: Exception) {
-                // Log error
+            currentUserId?.let {
+                journalRepository.createJournalEntry(entry.copy(userId = it))
+                    .onFailure { _error.value = "Impossible de créer l'entrée de journal." }
             }
         }
     }
 
     fun updateJournalEntry(entry: JournalEntry) {
         viewModelScope.launch {
-            entry.id?.let {
-                try {
-                    SupabaseManager.client.postgrest.from("journal_entries").update({
-                        set("title", entry.title)
-                        set("content", entry.content)
-                        set("mood", entry.mood)
-                    }) {
-                        filter { eq("id", it) }
-                    }
-                    fetchJournalEntries()
-                } catch (e: Exception) {
-                    // Log error
-                }
-            }
+            journalRepository.updateJournalEntry(entry)
+                .onFailure { _error.value = "Impossible de mettre à jour l'entrée de journal." }
         }
     }
 
     fun deleteJournalEntry(entry: JournalEntry) {
         viewModelScope.launch {
-            entry.id?.let {
-                try {
-                    SupabaseManager.client.postgrest.from("journal_entries").delete {
-                        filter { eq("id", it) }
-                    }
-                    fetchJournalEntries()
-                } catch (e: Exception) {
-                    // Log error
-                }
+            journalRepository.deleteJournalEntry(entry)
+                .onFailure { _error.value = "Impossible de supprimer l'entrée de journal." }
+        }
+    }
+
+    fun createDailyReflection(reflection: DailyReflection) {
+        viewModelScope.launch {
+            currentUserId?.let {
+                journalRepository.createDailyReflection(reflection.copy(userId = it))
+                    .onFailure { _error.value = "Impossible de créer la réflexion." }
             }
         }
     }
 
-    fun fetchDailyReflections() {
-        viewModelScope.launch {
-            val userId = SupabaseManager.client.auth.currentUserOrNull()?.id ?: return@launch
-            try {
-                val reflections = SupabaseManager.client.postgrest.from("daily_reflections").select {
-                    filter { eq("user_id", userId) }
-                }.decodeList<DailyReflection>()
-                _dailyReflections.value = reflections
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
-    }
-
-     fun createDailyReflection(reflection: DailyReflection) {
-        viewModelScope.launch {
-            val user = SupabaseManager.client.auth.currentUserOrNull() ?: return@launch
-            try {
-                SupabaseManager.client.postgrest.from("daily_reflections").insert(reflection.copy(userId = user.id))
-                fetchDailyReflections()
-            } catch (e: Exception) {
-                // Log error
-            }
-        }
+    fun clearError() {
+        _error.value = null
     }
 }
