@@ -6,6 +6,7 @@ import com.google.firebase.ai.type.GenerateContentResponse
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.ai.type.ServiceDisabledException
 
 // Sealed class to represent the result of a Gemini API call
 sealed class GeminiResult {
@@ -39,8 +40,13 @@ class GeminiService {
                 Log.d("GeminiService", "Réponse de Gemini reçue : ${response.text}")
                 GeminiResult.Success(response.text)
             }
+        } catch (e: ServiceDisabledException) {
+            // Log the specific exception
+            Log.e("GeminiService", "Erreur de configuration Firebase: l'API Vertex AI est désactivée.", e)
+            // Return a user-friendly error message in French
+            GeminiResult.Error("La fonctionnalité IA n'est pas activée. Veuillez vérifier la configuration du projet Firebase.")
         } catch (e: Exception) {
-            // Log and return any exception that occurs
+            // Log and return any other exception that occurs
             Log.e("GeminiService", "Erreur lors de la communication avec l'API Gemini", e)
             GeminiResult.Error(e.message ?: "Une erreur inconnue est survenue.")
         }
